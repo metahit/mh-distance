@@ -2,10 +2,10 @@
 
 rm(list=ls())
 library(data.table)
-setwd('~/overflow_dropbox/mh-execute/')
+setwd('~/overflow_dropbox/mh-distance/')
 
 ## get raw rc files
-matrix_path <- 'inputs/travel-matrices/'
+matrix_path <- '../mh-execute/inputs/travel-matrices/'
 matrix_files <- list.files(matrix_path)
 rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc',x))]
 raw_rc_mat_list <- list()
@@ -95,7 +95,7 @@ for(i in 1:5){
 
 ## get synthetic populations
 synth_pops <- list()
-synth_pop_path <- 'inputs/scenarios/'
+synth_pop_path <- '../mh-execute/inputs/scenarios/'
 synth_pop_files <- list.files(synth_pop_path)
 synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
 # set to data table
@@ -315,11 +315,11 @@ for(scenario in scenarios){
                                     distance_for_emission=distance_for_emission,
                                     distance_for_noise=distance_for_noise)
 }
-saveRDS(all_distances,'all_distances.Rds')
-all_distances <- readRDS('all_distances.Rds')
+saveRDS(all_distances,'outputs/all_distances.Rds')
+all_distances <- readRDS('outputs/all_distances.Rds')
 
 
-path_to_injury_model_and_data <- 'inputs/injury/'
+path_to_injury_model_and_data <- '../mh-execute/inputs/injury/'
 injury_table <- readRDS(paste0(path_to_injury_model_and_data,'processed_injuries_9.Rds'))
 
 m_strike_car <- sum(all_distances[[1]]$distance_for_strike$motorway[all_distances[[1]]$distance_for_strike$demogindex<100&all_distances[[1]]$distance_for_strike$mode_name=='cardrive'])
@@ -419,7 +419,7 @@ dev.off()
 
 road_dist <- readRDS('car_million_km_2010_to_2015.Rds')
 lookup_table <- readRDS('../mh-injury/rds_storage/lookup_table.Rds')
-la_dist <- read.xlsx('~/overflow_dropbox/ITHIM/InjuryModel/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1667)
+la_dist <- read.xlsx('inputs/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1667)
 la_dist$LA_Name <- as.character(la_dist$LA_Name)
 la_dist$LA_Name[la_dist$LA_Name=='Bristol'] <- 'Bristol, City of'
 bristol <- subset(la_dist,Region_Name=='South West'&Year>2009&LA_Name%in%c('Bristol, City of','Bath and North East Somerset','South Gloucestershire','North Somerset'))
