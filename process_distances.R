@@ -419,7 +419,7 @@ dev.off()
 
 road_dist <- readRDS('car_million_km_2010_to_2015.Rds')
 lookup_table <- readRDS('../mh-injury/rds_storage/lookup_table.Rds')
-la_dist <- read.xlsx('inputs/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1667)
+la_dist <- read.xlsx('inputs/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1670)
 la_dist$LA_Name <- as.character(la_dist$LA_Name)
 la_dist$LA_Name[la_dist$LA_Name=='Bristol'] <- 'Bristol, City of'
 bristol <- subset(la_dist,Region_Name=='South West'&Year>2009&LA_Name%in%c('Bristol, City of','Bath and North East Somerset','South Gloucestershire','North Somerset'))

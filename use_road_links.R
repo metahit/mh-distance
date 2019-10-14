@@ -16,7 +16,7 @@ regions <- unique(la_table$cityregion)
 regions <- regions[regions!='']
 
 ## la distances
-la_dist <- read.xlsx('inputs/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1667)
+la_dist <- read.xlsx('inputs/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1670)
 la_dist$LA_Name <- as.character(la_dist$LA_Name)
 la_dist$LA_Name[la_dist$LA_Name=='Bristol'] <- 'Bristol, City of'## compare to RTS
 
