@@ -1,4 +1,3 @@
-# uniformity would be useful, e.g. having empty rows/tables - mode1_u1d1_matla.csv, E06000023 in mode1_u0d0_matla.csv
 
 rm(list=ls())
 library(data.table)
