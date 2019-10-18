@@ -315,7 +315,20 @@ for(scenario in scenarios){
                                     distance_for_noise=distance_for_noise)
 }
 saveRDS(all_distances,'outputs/all_distances.Rds')
+
+###################################################################################
+## a look at the distances
+
 all_distances <- readRDS('outputs/all_distances.Rds')
+
+
+str_dist <- all_distances$base_$distance_for_strike
+distance_sums <- sapply(colnames(str_dist)[3:8],
+       function(y) sapply(unique(str_dist$mode_name),
+                         function(x) sum(subset(str_dist,la%in%home_las&mode_name==x)[[y]])/sum(subset(str_dist,mode_name==x)[[y]])
+                         )
+       )
+distance_sums*52*6/1000
 
 
 path_to_injury_model_and_data <- '../mh-execute/inputs/injury/'
