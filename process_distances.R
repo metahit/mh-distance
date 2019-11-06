@@ -3,6 +3,11 @@ rm(list=ls())
 library(data.table)
 setwd('~/overflow_dropbox/mh-distance/')
 
+city_regions_table <- read.csv('../mh-execute/inputs/city_regions.csv',stringsAsFactors = F)
+city_regions <- unique(city_regions_table$cityregion)
+city_regions <- city_regions[city_regions!='']
+city_las <- city_regions_table$lad11cd[city_regions_table$cityregion%in%city_regions]
+
 ## get raw rc files
 matrix_path <- '../mh-execute/inputs/travel-matrices/'
 matrix_files <- list.files(matrix_path)
@@ -47,7 +52,7 @@ for(i in 1:5){
 
 ## make matrices uniform
 # define home las
-home_las <- c('E06000022','E06000023','E06000024','E06000025')
+home_las <- c('E06000022','E06000023','E06000024','E06000025') # city_las#
 # get all las in rc
 rc_las <- unique(c(home_las,unique(unlist(lapply(raw_rc_mat_list,function(x)lapply(x,function(y)sapply(y,function(y)y[,1])))))))
 # get all las in la
@@ -79,8 +84,10 @@ for(i in 1:5){
   for(j in 1:2){
     la_mat_list[[i]][[j]] <- list()
     for(k in 1:length(raw_la_mat_list[[i]][[j]])){
-      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(home_las),ncol=length(las))
-      row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],home_las)
+      #la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(home_las),ncol=length(las))
+      #row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],home_las)
+      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(las),ncol=length(las))
+      row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],las)
       col_i <- match(colnames(raw_la_mat_list[[i]][[j]][[k]])[-1],las)
       la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][,-1])
       diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]] ) - diag(la_mat_list[[i]][[j]][[k]]))
