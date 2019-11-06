@@ -84,12 +84,16 @@ for(i in 1:5){
   for(j in 1:2){
     la_mat_list[[i]][[j]] <- list()
     for(k in 1:length(raw_la_mat_list[[i]][[j]])){
-      #la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(home_las),ncol=length(las))
-      #row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],home_las)
-      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(las),ncol=length(las))
-      row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],las)
+      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(home_las),ncol=length(las))
+      row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],home_las)
+      #la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(las),ncol=length(las))
+      #row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],las)
+      row_i <- row_i[!is.na(row_i)]
       col_i <- match(colnames(raw_la_mat_list[[i]][[j]][[k]])[-1],las)
-      la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][,-1])
+      #la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][,-1])
+      row_j <- match(home_las,raw_la_mat_list[[i]][[j]][[k]][,1])
+      row_j <- row_j[!is.na(row_j)]
+      la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][row_j,-1])
       diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]] ) - diag(la_mat_list[[i]][[j]][[k]]))
     }
   }
