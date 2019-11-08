@@ -9,7 +9,7 @@ city_regions <- city_regions[city_regions!='']
 city_las <- city_regions_table$lad11cd[city_regions_table$cityregion%in%city_regions]
 
 ## get raw rc files
-matrix_path <- '../mh-execute/inputs/travel-matrices/'
+matrix_path <- '../mh-execute/inputs/travel-matrices-v2withminor/'
 matrix_files <- list.files(matrix_path)
 rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc',x))]
 raw_rc_mat_list <- list()
@@ -61,6 +61,8 @@ dest_las <- unique(c(home_las,unique(unlist(lapply(raw_la_mat_list,function(x)la
 roadnames <- unique(unlist(lapply(raw_rc_mat_list,function(x)lapply(x,function(y)sapply(y,function(y)colnames(y)[-1])))))
 # define ordered set of unique las
 las <- unique(c(rc_las,dest_las))
+destination_las <- c(home_las, 'none')
+origin_las <- las
 
 ## make rc matrices
 rc_mat_list <- list()
@@ -69,10 +71,13 @@ for(i in 1:5){
   for(j in 1:2){
     rc_mat_list[[i]][[j]] <- list()
     for(k in 1:length(raw_rc_mat_list[[i]][[j]])){
-      rc_mat_list[[i]][[j]][[k]] <- matrix(0,ncol=length(roadnames),nrow=length(las))
-      row_i <- match(raw_rc_mat_list[[i]][[j]][[k]][,1],las)
+      rc_mat_list[[i]][[j]][[k]] <- matrix(0,ncol=length(roadnames),nrow=length(home_las))
+      row_j <- match(home_las,raw_rc_mat_list[[i]][[j]][[k]][,1])
+      row_i <- match(raw_rc_mat_list[[i]][[j]][[k]][,1],home_las)
+      row_i <- row_i[!is.na(row_i)]
+      row_j <- row_j[!is.na(row_j)]
       col_i <- match(colnames(raw_rc_mat_list[[i]][[j]][[k]])[-1],roadnames)
-      rc_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_rc_mat_list[[i]][[j]][[k]][,-1])
+      rc_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_rc_mat_list[[i]][[j]][[k]][row_j,-1])
     }
   }
 }
@@ -84,16 +89,21 @@ for(i in 1:5){
   for(j in 1:2){
     la_mat_list[[i]][[j]] <- list()
     for(k in 1:length(raw_la_mat_list[[i]][[j]])){
-      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(home_las),ncol=length(las))
-      row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],home_las)
+      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(destination_las),ncol=length(origin_las))
+      augment_la_mat <- raw_la_mat_list[[i]][[j]][[k]]
+      augment_la_mat$none <- rowSums(augment_la_mat[,!colnames(augment_la_mat)%in%c(destination_las,'lahome')])
+      row_i <- match(augment_la_mat[,1],destination_las)
       #la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(las),ncol=length(las))
       #row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],las)
       row_i <- row_i[!is.na(row_i)]
-      col_i <- match(colnames(raw_la_mat_list[[i]][[j]][[k]])[-1],las)
+      col_i <- match(colnames(augment_la_mat)[-1],destination_las)
+      col_i <- col_i[!is.na(col_i)]
       #la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][,-1])
-      row_j <- match(home_las,raw_la_mat_list[[i]][[j]][[k]][,1])
+      row_j <- match(destination_las,augment_la_mat[,1])
       row_j <- row_j[!is.na(row_j)]
-      la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][row_j,-1])
+      col_j <- match(destination_las,colnames(augment_la_mat))
+      col_j <- col_j[!is.na(col_j)]
+      la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(augment_la_mat[row_j,col_j])
       diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]] ) - diag(la_mat_list[[i]][[j]][[k]]))
     }
   }
@@ -172,22 +182,22 @@ for(scenario in scenarios){
     mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
   ),by=urbanmatch,.SDcols=cols])
   distance_sums <- rbindlist(distance_sums)
-  for(i in 1:length(las)) distance_sums[,las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
-  distance_for_noise <- distance_sums[,lapply(.SD,sum),by='mode_name',.SDcols=las]
+  for(i in 1:length(destination_las)) distance_sums[,destination_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+  distance_for_noise <- distance_sums[,lapply(.SD,sum),by='mode_name',.SDcols=destination_las]
   
   # emission : total distance per mode per road type per LA
   # allocate distance_sums to roadtypes
   for(i in 1:length(roadnames)) 
-    distance_sums[,sapply(las,function(x)paste0(x,roadnames[i])):=lapply(.SD,function(x)x*rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch'),.SDcols=las]
-  la_road <- sapply(las,function(x)paste0(x,roadnames))
+    distance_sums[,sapply(home_las,function(x)paste0(x,roadnames[i])):=lapply(.SD,function(x)x*rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch'),.SDcols=home_las]
+  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
   temp_distance_for_emission <- distance_sums[,lapply(.SD,sum),by='mode_name',.SDcols=la_road]
   reorganise <- list()
   colnms <- colnames(temp_distance_for_emission)
-  for(i in 1:length(las)) {
-    rdnms <- sapply(colnms,function(x)gsub(las[i],'',x))
+  for(i in 1:length(home_las)) {
+    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
     reorganise[[i]] <- temp_distance_for_emission[,rdnms%in%c(roadnames,'mode_name'),with=F]
     colnames(reorganise[[i]]) <- c('mode_name',roadnames)
-    reorganise[[i]]$la <- las[i]
+    reorganise[[i]]$la <- home_las[i]
   }
   distance_for_emission <- rbindlist(reorganise)
   
@@ -207,21 +217,21 @@ for(scenario in scenarios){
     mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
   ),by=c('urbanmatch','demogindex'),.SDcols=cols])
   distance_sums <- rbindlist(distance_sums)
-  for(i in 1:length(las)) distance_sums[,las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+  for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
   for(i in 1:length(roadnames))
-    for(j in 1:length(las)){
-      la_col <- which(colnames(distance_sums)==las[j])
-      distance_sums[[paste0(las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
+    for(j in 1:length(home_las)){
+      la_col <- which(colnames(distance_sums)==home_las[j])
+      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
     }
-  la_road <- sapply(las,function(x)paste0(x,roadnames))
+  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
   temp_distance_for_strike <- distance_sums[,lapply(.SD,sum),by=c('mode_name','demogindex'),.SDcols=la_road]
   reorganise <- list()
   colnms <- colnames(temp_distance_for_strike)
-  for(i in 1:length(las)) {
-    rdnms <- sapply(colnms,function(x)gsub(las[i],'',x))
+  for(i in 1:length(home_las)) {
+    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
     reorganise[[i]] <- temp_distance_for_strike[,rdnms%in%c(roadnames,'demogindex','mode_name'),with=F]
     colnames(reorganise[[i]]) <- c('mode_name','demogindex',roadnames)
-    reorganise[[i]]$la <- las[i]
+    reorganise[[i]]$la <- home_las[i]
   }
   distance_for_strike <- rbindlist(reorganise)
   
@@ -247,21 +257,21 @@ for(scenario in scenarios){
     mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
   ),by=c('urbanmatch','demogindex'),.SDcols=cols])
   distance_sums <- rbindlist(distance_sums)
-  for(i in 1:length(las)) distance_sums[,las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+  for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
   for(i in 1:length(roadnames)) 
-    for(j in 1:length(las)){
-      la_col <- which(colnames(distance_sums)==las[j])
-      distance_sums[[paste0(las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
+    for(j in 1:length(home_las)){
+      la_col <- which(colnames(distance_sums)==home_las[j])
+      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
     }
-  la_road <- sapply(las,function(x)paste0(x,roadnames))
+  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
   temp_distance_for_cas <- distance_sums[,lapply(.SD,sum),by=c('mode_name','demogindex'),.SDcols=la_road]
   reorganise <- list()
   colnms <- colnames(temp_distance_for_cas)
-  for(i in 1:length(las)) {
-    rdnms <- sapply(colnms,function(x)gsub(las[i],'',x))
+  for(i in 1:length(home_las)) {
+    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
     reorganise[[i]] <- temp_distance_for_cas[,rdnms%in%c(roadnames,'demogindex','mode_name'),with=F]
     colnames(reorganise[[i]]) <- c('mode_name','demogindex',roadnames)
-    reorganise[[i]]$la <- las[i]
+    reorganise[[i]]$la <- home_las[i]
   }
   distance_for_cas <- rbindlist(reorganise)
   
@@ -298,23 +308,23 @@ for(scenario in scenarios){
   distance_sums <- rbindlist(distance_sums)
   distance_sums <- distance_sums[distance_sums$dist>0,]
   distance_sums <- distance_sums[!is.na(distance_sums$dist),]
-  for(i in 1:length(las)) distance_sums[,las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+  for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
   for(i in 1:length(roadnames)) 
-    for(j in 1:length(las)){
-      la_col <- which(colnames(distance_sums)==las[j])
-      distance_sums[[paste0(las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
+    for(j in 1:length(home_las)){
+      la_col <- which(colnames(distance_sums)==home_las[j])
+      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
     }
-  la_road <- sapply(las,function(x)paste0(x,roadnames))
+  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
   temp_distance_for_inh <- distance_sums[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=la_road]
   reorganise <- list()
   colnms <- colnames(temp_distance_for_inh)
-  for(i in 1:length(las)) {
-    rdnms <- sapply(colnms,function(x)gsub(las[i],'',x))
+  for(i in 1:length(home_las)) {
+    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
     reorganise[[i]] <- temp_distance_for_inh[,rdnms%in%c(roadnames,'census_id','mode_name'),with=F]
     keep_rows <- rowSums(reorganise[[i]][,3:8])>0
     reorganise[[i]] <- reorganise[[i]][keep_rows,]
     colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
-    reorganise[[i]]$la <- las[i]
+    reorganise[[i]]$la <- home_las[i]
   }
   distance_for_inh <- rbindlist(reorganise)
   
@@ -325,7 +335,7 @@ for(scenario in scenarios){
                                     distance_for_emission=distance_for_emission,
                                     distance_for_noise=distance_for_noise)
 }
-saveRDS(all_distances,'outputs/all_distances.Rds')
+saveRDS(all_distances,'outputs/all_distances-v2.Rds')
 
 ###################################################################################
 ## a look at the distances
@@ -336,7 +346,7 @@ all_distances <- readRDS('outputs/all_distances.Rds')
 str_dist <- all_distances$base_$distance_for_strike
 distance_sums <- sapply(colnames(str_dist)[3:8],
        function(y) sapply(unique(str_dist$mode_name),
-                         function(x) sum(subset(str_dist,la%in%home_las&mode_name==x)[[y]])/sum(subset(str_dist,mode_name==x)[[y]])
+                         function(x) sum(subset(str_dist,la%in%home_las&mode_name==x)[[y]])
                          )
        )
 distance_sums*52*6/1000
