@@ -11,7 +11,7 @@ raw_aadf$road_letter <- sapply(raw_aadf$road_category,function(x)strsplit(x,'')[
 raw_aadf$link_length_km <- as.numeric(raw_aadf$link_length_km)
 
 ## city regions definitions
-la_table <- read.csv('~/overflow_dropbox/mh-execute/inputs/mh_regions_lad_lookup.csv')
+la_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv')
 regions <- unique(la_table$cityregion)
 regions <- regions[regions!='']
 
