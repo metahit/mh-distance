@@ -7,6 +7,7 @@ city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',
 city_regions <- unique(city_regions_table$cityregion)
 city_regions <- city_regions[city_regions!='']
 city_las <- city_regions_table$lad11cd[city_regions_table$cityregion%in%city_regions]
+la_city_indices <- sapply(city_las,function(x) which(city_regions==city_regions_table$cityregion[city_regions_table$lad11cd==x]))
 
 ## get raw rc files
 matrix_path <- '../mh-execute/inputs/travel-matrices/'
@@ -52,7 +53,7 @@ for(i in 1:5){
 
 ## make matrices uniform
 # define home las
-home_las <- c('E06000022','E06000023','E06000024','E06000025') # city_las#
+home_las <- city_las #c('E06000022','E06000023','E06000024','E06000025') # 
 # get all las in rc
 rc_las <- unique(c(home_las,unique(unlist(lapply(raw_rc_mat_list,function(x)lapply(x,function(y)sapply(y,function(y)y[,1])))))))
 # get all las in la
@@ -89,22 +90,23 @@ for(i in 1:5){
   for(j in 1:2){
     la_mat_list[[i]][[j]] <- list()
     for(k in 1:length(raw_la_mat_list[[i]][[j]])){
-      la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(destination_las),ncol=length(origin_las))
+      la_mat_list[[i]][[j]][[k]] <- matrix(0,ncol=length(destination_las),nrow=length(origin_las))
+      min_dim <- min(dim(la_mat_list[[i]][[j]][[k]]))
       augment_la_mat <- raw_la_mat_list[[i]][[j]][[k]]
       augment_la_mat$none <- rowSums(augment_la_mat[,!colnames(augment_la_mat)%in%c(destination_las,'lahome')])
-      row_i <- match(augment_la_mat[,1],destination_las)
+      row_i <- match(augment_la_mat[,1],origin_las)
       #la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(las),ncol=length(las))
       #row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],las)
       row_i <- row_i[!is.na(row_i)]
       col_i <- match(colnames(augment_la_mat)[-1],destination_las)
       col_i <- col_i[!is.na(col_i)]
       #la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][,-1])
-      row_j <- match(destination_las,augment_la_mat[,1])
+      row_j <- match(origin_las,augment_la_mat[,1])
       row_j <- row_j[!is.na(row_j)]
       col_j <- match(destination_las,colnames(augment_la_mat))
       col_j <- col_j[!is.na(col_j)]
       la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(augment_la_mat[row_j,col_j])
-      diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]] ) - diag(la_mat_list[[i]][[j]][[k]]))
+      #diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]][1:min_dim,1:min_dim] ) - diag(la_mat_list[[i]][[j]][[k]]))
     }
   }
 }
@@ -117,7 +119,8 @@ for(i in 1:5){
 synth_pops <- list()
 synth_pop_path <- '../mh-execute/inputs/scenarios/'
 synth_pop_files <- list.files(synth_pop_path)
-synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
+synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('SPind_E[[:alnum:]]+.Rds',x))]
+#synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
 # set to data table
 for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synth_pop_path,synth_pop_files[i])))
 # take subset of columns
@@ -129,29 +132,8 @@ for(i in 1:length(synth_pop_files)) synth_pops[[i]] <-
   ),with=F]
 # rename
 la_names <- sapply(synth_pop_files,function(x)gsub('SPind_','',x))
-la_names <- sapply(la_names,function(x)gsub('_subdivide.Rds','',x))
+la_names <- sapply(la_names,function(x)gsub('.Rds','',x))
 names(synth_pops) <- la_names
-
-# calculate total car dj
-car_total <- rep(0,6)
-for(j in 1:4){
-total_d1 <- sapply(1:4,function(z) # apply to first four LAs
-  rowSums(
-    sapply(1:length(synth_pops),function(x) # sum over travel of first four LAs
-      rowSums(
-        sapply(1:2,function(y) # sum over rural and urban
-          sum(
-            subset(synth_pops[[x]],urbanmatch==y-1)[[paste0('base_cardrive_wkkm_d',j)]]
-          )*la_mat_list[[3]][[y]][[j]][x,z]*rc_mat_list[[3]][[y]][[j]][z,] # sum distance times LA allocation
-        )
-      )
-    )
-  )
-)
-car_total <- car_total + rowSums(total_d1)
-print(rowSums(total_d1))
-}
-
 
 modes <- c('cycle','walk','cardrive','mbikedrive','bus')
 mode_list <- list('cycle','walk',c('cardrive'),'mbikedrive','bus')
@@ -204,7 +186,7 @@ for(scenario in scenarios){
   
   # injury rate : total distance per mode per road type per LA per demographic group
   ## rename columns
-  for(i in 1:length(synth_pops_scen)) colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkkm'] <- 'walk_wkkm_d1'
+  #for(i in 1:length(synth_pops_scen)) colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkkm'] <- 'walk_wkkm_d1'
   which_modes_strike <- 1:5
   strike_modes <- driven_modes[which_modes_strike]
   dist_cats <- dist_cats_per_mode[which_modes_strike]
