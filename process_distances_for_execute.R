@@ -3,13 +3,13 @@ rm(list=ls())
 library(data.table)
 setwd('~/overflow_dropbox/mh-distance/')
 
-city_regions_table <- read.csv('../mh-execute/inputs/city_regions.csv',stringsAsFactors = F)
+city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',stringsAsFactors = F)
 city_regions <- unique(city_regions_table$cityregion)
 city_regions <- city_regions[city_regions!='']
 city_las <- city_regions_table$lad11cd[city_regions_table$cityregion%in%city_regions]
 
 ## get raw rc files
-matrix_path <- '../mh-execute/inputs/travel-matrices-v2withminor/'
+matrix_path <- '../mh-execute/inputs/travel-matrices/'
 matrix_files <- list.files(matrix_path)
 rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc',x))]
 raw_rc_mat_list <- list()
@@ -335,7 +335,7 @@ for(scenario in scenarios){
                                     distance_for_emission=distance_for_emission,
                                     distance_for_noise=distance_for_noise)
 }
-saveRDS(all_distances,'outputs/all_distances-v2.Rds')
+saveRDS(all_distances,'outputs/all_distances.Rds')
 
 ###################################################################################
 ## a look at the distances
