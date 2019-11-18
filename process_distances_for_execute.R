@@ -1,4 +1,4 @@
-
+{
 rm(list=ls())
 library(data.table)
 setwd('~/overflow_dropbox/mh-distance/')
@@ -119,7 +119,7 @@ for(i in 1:5){
 synth_pops <- list()
 synth_pop_path <- '../mh-execute/inputs/scenarios/'
 synth_pop_files <- list.files(synth_pop_path)
-synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('SPind_E[[:alnum:]]+.Rds',x))]
+synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('SPind_E[[:digit:]]+.Rds',x))]
 #synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
 # set to data table
 for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synth_pop_path,synth_pop_files[i])))
@@ -134,6 +134,25 @@ for(i in 1:length(synth_pop_files)) synth_pops[[i]] <-
 la_names <- sapply(synth_pop_files,function(x)gsub('SPind_','',x))
 la_names <- sapply(la_names,function(x)gsub('.Rds','',x))
 names(synth_pops) <- la_names
+number_city_las <- length(synth_pops)
+
+## add 'mini' to all cities, to all scenarios, for distance_for_cas, distance_for_strike, distance_for_emission, distance_for_noise
+synth_pop_supp_path <- '../mh-execute/inputs/scenarios-mini/'
+synth_pop_supp_files <- list.files(synth_pop_supp_path)
+synth_pop_supp_files <- synth_pop_supp_files[sapply(synth_pop_supp_files,function(x)grepl('SPind_E[[:digit:]]+.Rds',x))]
+#synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
+# set to data table
+for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synth_pop_supp_path,synth_pop_supp_files[i-number_city_las])))
+# take subset of columns
+for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- 
+  synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
+                          function(x)x%in%c('census_id','urbanmatch','demogindex')|
+                            (grepl('base',x)&grepl('wkkm',x))
+  ),with=F]
+# rename
+la_names_supp <- sapply(synth_pop_supp_files,function(x)gsub('SPind_','',x))
+la_names_supp <- sapply(la_names_supp,function(x)gsub('.Rds','',x))
+names(synth_pops)[number_city_las+1:length(synth_pop_supp_files)] <- la_names_supp
 
 modes <- c('cycle','walk','cardrive','mbikedrive','bus')
 mode_list <- list('cycle','walk',c('cardrive'),'mbikedrive','bus')
@@ -146,16 +165,19 @@ all_distances <- list()
 scenarios <- c('base_','scen_')
 scenario <- 'base_'
 dist_cats_per_mode <- sapply(raw_rc_mat_list,function(x)sapply(x,length))[1,]
+}
 for(scenario in scenarios){
   
   synth_pops_scen <- copy(synth_pops)
-  for(i in 1:length(synth_pops_scen)) colnames(synth_pops_scen[[i]]) <- sapply(colnames(synth_pops_scen[[i]]),function(x)gsub(scenario,'',x))
+  for(i in 1:number_city_las) colnames(synth_pops_scen[[i]]) <- sapply(colnames(synth_pops_scen[[i]]),function(x)gsub(scenario,'',x))
+  for(i in (number_city_las+1):length(synth_pops_scen)) colnames(synth_pops_scen[[i]]) <- sapply(colnames(synth_pops_scen[[i]]),function(x)gsub('base_','',x))
   
   # noise : total distance per mode per LA
   which_modes_noisy <- !driven_modes%in%c('cycle','walk')
   noisy_modes <- driven_modes[which_modes_noisy]
   dist_cats <- dist_cats_per_mode[which_modes_noisy]
   cols <- unlist(lapply(1:length(noisy_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(noisy_modes[x],'_wkkm_d',y))))
+  # expand by mode, dist_cat, home_la, including all synth pops
   distance_sums <- lapply(1:length(synth_pops_scen),function(i)synth_pops_scen[[i]][,.(
     dist=sapply(.SD,sum),
     mode=sapply(cols,function(x)which(sapply(mode_list,function(y)any(sapply(y,function(z)grepl(z,x)))))),
@@ -164,15 +186,27 @@ for(scenario in scenarios){
     mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
   ),by=urbanmatch,.SDcols=cols])
   distance_sums <- rbindlist(distance_sums)
+  # map to destination las
   for(i in 1:length(destination_las)) distance_sums[,destination_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+  # sum in destination las
   distance_for_noise <- distance_sums[,lapply(.SD,sum),by='mode_name',.SDcols=destination_las]
   
   # emission : total distance per mode per road type per LA
+  # collapse to target las
+  distance_sums <- distance_sums[,lapply(.SD,sum),by=c('mode','mode_name','distcat','urbanmatch'),.SDcols=destination_las]
   # allocate distance_sums to roadtypes
+  
   for(i in 1:length(roadnames)) 
-    distance_sums[,sapply(home_las,function(x)paste0(x,roadnames[i])):=lapply(.SD,function(x)x*rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch'),.SDcols=home_las]
+    for(j in 1:length(home_las)){
+      la_col <- which(colnames(distance_sums)==home_las[j])
+      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*apply(distance_sums[,c(1,3,4)],1,function(x)rc_mat_list[[x[1]]][[x[3]+1]][[as.numeric(x[2])]][j,i])
+  
+      }
+  # get names for la+road combinations
   la_road <- sapply(home_las,function(x)paste0(x,roadnames))
+  # sum in la and road
   temp_distance_for_emission <- distance_sums[,lapply(.SD,sum),by='mode_name',.SDcols=la_road]
+  # reorganise to long form
   reorganise <- list()
   colnms <- colnames(temp_distance_for_emission)
   for(i in 1:length(home_las)) {
@@ -191,6 +225,7 @@ for(scenario in scenarios){
   strike_modes <- driven_modes[which_modes_strike]
   dist_cats <- dist_cats_per_mode[which_modes_strike]
   cols <- unlist(lapply(1:length(strike_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(strike_modes[x],'_wkkm_d',y))))
+  # expand by mode, dist_cat, home_la, demographic, including all synth pops
   distance_sums <- lapply(1:length(synth_pops_scen),function(i)synth_pops_scen[[i]][,.(
     dist=sapply(.SD,sum),
     mode=sapply(cols,function(x)which(sapply(mode_list,function(y)any(sapply(y,function(z)grepl(z,x)))))),
@@ -199,21 +234,32 @@ for(scenario in scenarios){
     mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
   ),by=c('urbanmatch','demogindex'),.SDcols=cols])
   distance_sums <- rbindlist(distance_sums)
+  # map to home las
   for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+  # map to road types, sum over cities
   for(i in 1:length(roadnames))
-    for(j in 1:length(home_las)){
-      la_col <- which(colnames(distance_sums)==home_las[j])
-      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
+    for(k in 1:length(city_regions)){
+      temp_dist <- rep(0,length=nrow(distance_sums))
+      for(l in 1:sum(la_city_indices==k)){
+        j <- which(home_las==c(city_las[la_city_indices==k])[l])
+        la_col <- which(colnames(distance_sums)==home_las[j])
+        temp_dist <- temp_dist + distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
+      }
+      distance_sums[[paste0(city_regions[k],roadnames[i])]] <- temp_dist
     }
-  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
-  temp_distance_for_strike <- distance_sums[,lapply(.SD,sum),by=c('mode_name','demogindex'),.SDcols=la_road]
+
+  # get city road labels
+  city_road <- sapply(city_regions,function(x)paste0(x,roadnames))
+  # sum over city roads
+  temp_distance_for_strike <- distance_sums[,lapply(.SD,sum),by=c('mode_name','demogindex'),.SDcols=city_road]
+  # reorganise to long form
   reorganise <- list()
   colnms <- colnames(temp_distance_for_strike)
-  for(i in 1:length(home_las)) {
-    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
+  for(i in 1:length(city_regions)) {
+    rdnms <- sapply(colnms,function(x)gsub(city_regions[i],'',x))
     reorganise[[i]] <- temp_distance_for_strike[,rdnms%in%c(roadnames,'demogindex','mode_name'),with=F]
     colnames(reorganise[[i]]) <- c('mode_name','demogindex',roadnames)
-    reorganise[[i]]$la <- home_las[i]
+    reorganise[[i]]$city_region <- city_regions[i]
   }
   distance_for_strike <- rbindlist(reorganise)
   
@@ -231,6 +277,7 @@ for(scenario in scenarios){
   
   dist_cats <- dist_cats_per_mode
   cols <- unlist(lapply(1:length(driven_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(driven_modes[x],'_wkkm_d',y))))
+  # expand by mode, dist_cat, home_la, demographic, including all synth pops
   distance_sums <- lapply(1:length(synth_pops_scen),function(i)synth_pops_scen[[i]][,.(
     dist=sapply(.SD,sum),
     mode=sapply(cols,function(x)which(sapply(mode_list,function(y)any(sapply(y,function(z)grepl(z,x)))))),
@@ -239,30 +286,40 @@ for(scenario in scenarios){
     mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
   ),by=c('urbanmatch','demogindex'),.SDcols=cols])
   distance_sums <- rbindlist(distance_sums)
+  # map to home las
   for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
-  for(i in 1:length(roadnames)) 
-    for(j in 1:length(home_las)){
-      la_col <- which(colnames(distance_sums)==home_las[j])
-      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
+  # map to road types, sum over cities
+  for(i in 1:length(roadnames))
+    for(k in 1:length(city_regions)){
+      temp_dist <- rep(0,length=nrow(distance_sums))
+      for(l in 1:sum(la_city_indices==k)){
+        j <- which(home_las==c(city_las[la_city_indices==k])[l])
+        la_col <- which(colnames(distance_sums)==home_las[j])
+        temp_dist <- temp_dist + distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[distcat]][j,i],by=c('mode','dist','distcat','urbanmatch','demogindex','la_index')]$V1
+      }
+      distance_sums[[paste0(city_regions[k],roadnames[i])]] <- temp_dist
     }
-  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
-  temp_distance_for_cas <- distance_sums[,lapply(.SD,sum),by=c('mode_name','demogindex'),.SDcols=la_road]
+  # get city road labels
+  city_road <- sapply(city_regions,function(x)paste0(x,roadnames))
+  # sum over city roads
+  temp_distance_for_cas <- distance_sums[,lapply(.SD,sum),by=c('mode_name','demogindex'),.SDcols=city_road]
+  # reorganise to long form
   reorganise <- list()
   colnms <- colnames(temp_distance_for_cas)
-  for(i in 1:length(home_las)) {
-    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
+  for(i in 1:length(city_regions)) {
+    rdnms <- sapply(colnms,function(x)gsub(city_regions[i],'',x))
     reorganise[[i]] <- temp_distance_for_cas[,rdnms%in%c(roadnames,'demogindex','mode_name'),with=F]
     colnames(reorganise[[i]]) <- c('mode_name','demogindex',roadnames)
-    reorganise[[i]]$la <- home_las[i]
+    reorganise[[i]]$city_region <- city_regions[i]
   }
   distance_for_cas <- rbindlist(reorganise)
   
   
   
-  # physical activity : duration per person per mode
+  # physical activity : duration per person per mode, including only city las
   pa_modes <- c('cycle','walk')
   pa_pops <- list()
-  for(i in 1:length(synth_pops_scen)) pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
+  for(i in 1:number_city_las) pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
                                                                               walk_wkkm=walk_wkkm_d1,
                                                                               cycle_wkkm=cycle_wkkm_d1+cycle_wkkm_d2+cycle_wkkm_d3,
                                                                               la=i)]
@@ -273,43 +330,77 @@ for(scenario in scenarios){
   # pollution inhalation : duration per person per mode per road type per LA (we've already added passenger to driver)
   inh_modes <- driven_modes
   cols <- unlist(lapply(1:length(inh_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(inh_modes[x],'_wkkm_d',y))))
-  distance_sums <- lapply(1:length(synth_pops_scen),function(i){
-    #melt0 <- melt(inh_pops[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns('*0','*1'),variable.name='mode',value.name=c('d0','d1'))
-    #melt1 <- melt(melt0,id.vars=c('census_id','urbanmatch'),measure=patterns('^d'),variable.name='distcat',value.name='dist')
-    melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes)),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
-    melt3 <- melt(melt2,id.vars=c('census_id','urbanmatch','distcat'),measure=patterns('^mode'),variable.name='mode_name',value.name='dist', variable.factor=F)
-    melt3$la_index <- i
-    melt3$mode <- 1
-    for(j in inh_modes){
-      modej <- paste0('mode',j)
-      melt3$mode_name[melt3$mode_name==modej] <- j
-      melt3$mode[melt3$mode_name==j] <- which(sapply(mode_list,function(y)any(sapply(y,function(z)grepl(z,j)))))
+  distance_for_inh <- list()
+  # go city by city
+  for(city in city_regions){
+    # should include only city las
+    one_city_las <- which(names(synth_pops_scen)%in%city_regions_table$lad11cd[city_regions_table$cityregion==city])
+    if(length(one_city_las)>0){
+    # expand by mode, dist_cat, home_la, participant_id
+    distance_sums <- lapply(one_city_las,function(i){ # lapply(1:length(synth_pops_scen),function(i){
+      #melt0 <- melt(inh_pops[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns('*0','*1'),variable.name='mode',value.name=c('d0','d1'))
+      #melt1 <- melt(melt0,id.vars=c('census_id','urbanmatch'),measure=patterns('^d'),variable.name='distcat',value.name='dist')
+      melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes)),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
+      melt3 <- melt(melt2,id.vars=c('census_id','urbanmatch','distcat'),measure=patterns('^mode'),variable.name='mode_name',value.name='dist', variable.factor=F)
+      melt3$la_index <- i
+      melt3$mode <- 1
+      for(j in inh_modes){
+        modej <- paste0('mode',j)
+        melt3$mode_name[melt3$mode_name==modej] <- j
+        melt3$mode[melt3$mode_name==j] <- which(sapply(mode_list,function(y)any(sapply(y,function(z)grepl(z,j)))))
+      }
+      melt3
+    })
+    distance_sums <- rbindlist(distance_sums)
+    distance_sums <- distance_sums[distance_sums$dist>0,]
+    distance_sums <- distance_sums[!is.na(distance_sums$dist),]
+    # map to home city las
+    for(i in 1:length(one_city_las)) 
+      distance_sums[,home_las[one_city_las[i]]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dist','distcat','urbanmatch')]
+    # map to road types
+    #distance_sums_list <- temp_distance_for_inh_list <- list()
+    #for(i in 1:length(roadnames)){
+    #  distance_sums_list[[i]] <- copy(distance_sums)
+    #  for(j in 1:length(home_las)){
+    #    print(c(i,j))
+    #    la_col <- which(colnames(distance_sums_list[[i]])==home_las[j])
+    #    pos_indices <- distance_sums_list[[i]][[la_col]]>0
+    #    if(sum(pos_indices)>0)
+    #      distance_sums_list[[i]][[la_col]][pos_indices] <- 
+    #      distance_sums_list[[i]][[la_col]][pos_indices]*distance_sums_list[[i]][pos_indices,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
+    #  }
+    #  temp_distance_for_inh_list[[i]] <- distance_sums_list[[i]][,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=home_las]
+    #  distance_sums_list[[i]] <- c()
+    #}
+    for(i in 1:length(roadnames))
+      for(j in 1:length(one_city_las)){
+        la_col <- which(colnames(distance_sums)==home_las[one_city_las[j]])
+        pos_indices <- distance_sums[[la_col]]>0
+        distance_sums[[paste0(home_las[one_city_las[j]],roadnames[i])]] <- 0
+        if(sum(pos_indices)>0)
+          distance_sums[[paste0(home_las[one_city_las[j]],roadnames[i])]][pos_indices] <- 
+          distance_sums[[la_col]][pos_indices]*distance_sums[pos_indices,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
+      }
+    # get road la names
+    la_road <- sapply(home_las[one_city_las],function(x)paste0(x,roadnames))
+    # sum over dist cats
+    temp_distance_for_inh <- distance_sums[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=la_road]
+    # reorganise into long form
+    reorganise <- list()
+    colnms <- colnames(temp_distance_for_inh)
+    for(i in 1:length(one_city_las)) {
+      rdnms <- sapply(colnms,function(x)gsub(home_las[one_city_las[i]],'',x))
+      reorganise[[i]] <- temp_distance_for_inh[,rdnms%in%c(roadnames,'census_id','mode_name'),with=F]
+      keep_rows <- rowSums(reorganise[[i]][,3:8])>0
+      reorganise[[i]] <- reorganise[[i]][keep_rows,]
+      colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
+      reorganise[[i]]$la <- home_las[one_city_las[i]]
     }
-    melt3
-  })
-  distance_sums <- rbindlist(distance_sums)
-  distance_sums <- distance_sums[distance_sums$dist>0,]
-  distance_sums <- distance_sums[!is.na(distance_sums$dist),]
-  for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
-  for(i in 1:length(roadnames)) 
-    for(j in 1:length(home_las)){
-      la_col <- which(colnames(distance_sums)==home_las[j])
-      distance_sums[[paste0(home_las[j],roadnames[i])]] <- distance_sums[[la_col]]*distance_sums[,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
+    #distance_for_inh <- rbindlist(reorganise)
+    distance_for_inh[[city]] <- rbindlist(reorganise)
+    #saveRDS(distance_for_inh,paste0('outputs/distance_for_inh_',scenario,city,'.Rds'))
     }
-  la_road <- sapply(home_las,function(x)paste0(x,roadnames))
-  temp_distance_for_inh <- distance_sums[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=la_road]
-  reorganise <- list()
-  colnms <- colnames(temp_distance_for_inh)
-  for(i in 1:length(home_las)) {
-    rdnms <- sapply(colnms,function(x)gsub(home_las[i],'',x))
-    reorganise[[i]] <- temp_distance_for_inh[,rdnms%in%c(roadnames,'census_id','mode_name'),with=F]
-    keep_rows <- rowSums(reorganise[[i]][,3:8])>0
-    reorganise[[i]] <- reorganise[[i]][keep_rows,]
-    colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
-    reorganise[[i]]$la <- home_las[i]
-  }
-  distance_for_inh <- rbindlist(reorganise)
-  
+    }
   all_distances[[scenario]] <- list(distance_for_inh=distance_for_inh,
                                     distance_for_pa=distance_for_pa,
                                     distance_for_cas=distance_for_cas,
@@ -317,6 +408,9 @@ for(scenario in scenarios){
                                     distance_for_emission=distance_for_emission,
                                     distance_for_noise=distance_for_noise)
 }
+
+
+
 saveRDS(all_distances,'outputs/all_distances.Rds')
 
 ###################################################################################
@@ -328,10 +422,12 @@ all_distances <- readRDS('outputs/all_distances.Rds')
 str_dist <- all_distances$base_$distance_for_strike
 distance_sums <- sapply(colnames(str_dist)[3:8],
        function(y) sapply(unique(str_dist$mode_name),
-                         function(x) sum(subset(str_dist,la%in%home_las&mode_name==x)[[y]])
+                         function(x) sapply(city_regions,function(z)
+                           c(sum(subset(str_dist,mode_name==x&city_region==z)[[y]]))
                          )
        )
-distance_sums*52*6/1000
+       )
+cbind(rep(unique(str_dist$mode_name),each=length(city_regions)),rep(city_regions,times=length(unique(str_dist$mode_name))),distance_sums*52*6/1000)
 
 
 path_to_injury_model_and_data <- '../mh-execute/inputs/injury/'
@@ -432,51 +528,35 @@ dev.off()
 
 ##########################################
 
-road_dist <- readRDS('car_million_km_2010_to_2015.Rds')
+#road_dist <- list()#readRDS('car_million_km_2010_to_2015.Rds')
+road_dist <- lapply(c('cycle','cardrive','mbikedrive'),
+                    function(x)sapply(colnames(str_dist)[3:8],
+                        function(y)  sapply(city_regions,function(z)
+                                             c(sum(subset(str_dist,mode_name==x&city_region==z)[[y]]))
+                                           )
+                        )
+)
+names(road_dist) <- c('cycle','cardrive','mbikedrive')
+
 lookup_table <- readRDS('../mh-injury/rds_storage/lookup_table.Rds')
-la_dist <- read.xlsx('inputs/VehicleType_LALevel.xlsx',sheetIndex = 1,rowIndex = 6:1670)
-la_dist$LA_Name <- as.character(la_dist$LA_Name)
-la_dist$LA_Name[la_dist$LA_Name=='Bristol'] <- 'Bristol, City of'
-bristol <- subset(la_dist,Region_Name=='South West'&Year>2009&LA_Name%in%c('Bristol, City of','Bath and North East Somerset','South Gloucestershire','North Somerset'))
-sapply(2010:2015,function(x)sum(subset(bristol,Year==x)$Car))/1000*1.6
+city_dist <- read.csv('outputs/mode_road_city.csv',stringsAsFactors = F)
 
-sum(routed)
-sum(bristol$Car)/52/6
-sum(rts/6/52*1e3)
-sum(links/6/52*1e3)
-
-rownames(road_dist) <- sapply(rownames(road_dist),function(x)tolower(gsub(' ','',x)))
-citymap <- list(bristol='bristol',
-                nottingham='nottingham',
-                liverpool='liverpoolcityregioncombinedauthority',
-                northeast='northeastcombinedauthority',
-                greatermanchester='greatermanchestercombinedauthority',
-                sheffield='sheffieldcityregioncombinedauthority',
-                westmidlands='westmidlandscombinedauthority',
-                leeds='westyorkshirecombinedauthority',
-                london='london')
-
-
-cities <- unique(lookup_table$cityregion)
-cities <- cities[cities!='']
-ratios <- list()
-for(city in cities){
-  las <- subset(lookup_table,cityregion==city)$la
-  missing <- las[!las%in%la_dist$LA_Name]
-  #if(length(missing)>0){
-  #  cat(paste0('Unmatched LAs, distances not extracted for ',city,':\n'))
-  #  cat(paste0(missing,'\n'))
-  #}else{
-    la_sum <- sum(subset(la_dist,Year>2009&LA_Name%in%las)$Car)
-    road_sum <- sum(road_dist[which(rownames(road_dist)==citymap[[city]]),])
-    print(city)
-    if(la_sum/1000*1.6-road_sum>1e3){
-      print(c(la_sum/1000*1.6-road_sum)/1e6)
-      print(sapply(las,function(x)sum(subset(la_dist,Year>2009&LA_Name==x)$Car))/1e9*1.6)
-    }
-    ratios[[city]] <- la_sum/1000*1.6/road_sum
-  #}
+cols <- rainbow(nrow(road_dist[[1]]))
+{x11(width=10,height=10); par(mfrow=c(3,3),mar=c(5,5,2,2))
+for(i in 1:3)
+  for(j in 1:3){
+    city_lab <- c('bicycle','car','motorcycle')[j]
+    city_dist_subset <- subset(city_dist,X.1==city_lab)
+    city_order <- match(city_dist_subset$X,rownames(road_dist[[j]]))
+    city_road <- c('Motorway','Urban.A','Rural.A')[i]
+    road_road <- c('motorway','urban_primary','rural_primary')[i]
+    if(j==1&&i==1) {
+      plot(0,0,col='white',frame=F,xaxt='n',yaxt='n',ylab='',xlab='')
+      legend(x=-0.5,y=1,legend=city_dist_subset$X,col=cols,pch=15,cex=1.5,bty='n')
+      }else{
+    plot(log(city_dist_subset[[city_road]]),log(road_dist[[j]][,which(colnames(road_dist[[j]])==road_road)]),pch=15,col=cols,
+         frame=F,xlab='AADF',ylab='Synthetic population',main=paste0(road_road,', ',city_lab),cex.axis=1.5,cex.lab=1.5,cex=1.5)
+        lines(c(0,20),c(0,20))
+      }
+  }
 }
-pdf('RTSLAvsRTSroad.pdf')
-par(mar=c(10,5,2,2)); barplot(unlist(ratios),las=2,ylab='LA sum / road sum',cex.lab=1.5,cex.axis=1.5,cex.names=1.25,col='navyblue')
-dev.off()
