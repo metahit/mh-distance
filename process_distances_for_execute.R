@@ -74,10 +74,10 @@ for(i in 1:5){
     for(k in 1:length(raw_rc_mat_list[[i]][[j]])){
       rc_mat_list[[i]][[j]][[k]] <- matrix(0,ncol=length(roadnames),nrow=length(home_las))
       row_j <- match(home_las,raw_rc_mat_list[[i]][[j]][[k]][,1])
-      row_i <- match(raw_rc_mat_list[[i]][[j]][[k]][,1],home_las)
+      row_i <- home_las %in% raw_rc_mat_list[[i]][[j]][[k]][,1] # match(raw_rc_mat_list[[i]][[j]][[k]][,1],home_las)
       row_i <- row_i[!is.na(row_i)]
       row_j <- row_j[!is.na(row_j)]
-      col_i <- match(colnames(raw_rc_mat_list[[i]][[j]][[k]])[-1],roadnames)
+      col_i <- roadnames %in% colnames(raw_rc_mat_list[[i]][[j]][[k]])[-1] # match(colnames(raw_rc_mat_list[[i]][[j]][[k]])[-1],roadnames)
       rc_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_rc_mat_list[[i]][[j]][[k]][row_j,-1])
     }
   }
@@ -94,11 +94,11 @@ for(i in 1:5){
       min_dim <- min(dim(la_mat_list[[i]][[j]][[k]]))
       augment_la_mat <- raw_la_mat_list[[i]][[j]][[k]]
       augment_la_mat$none <- rowSums(augment_la_mat[,!colnames(augment_la_mat)%in%c(destination_las,'lahome')])
-      row_i <- match(augment_la_mat[,1],origin_las)
+      row_i <- origin_las %in% augment_la_mat[,1] # match(augment_la_mat[,1],origin_las)
       #la_mat_list[[i]][[j]][[k]] <- matrix(0,nrow=length(las),ncol=length(las))
       #row_i <- match(raw_la_mat_list[[i]][[j]][[k]][,1],las)
       row_i <- row_i[!is.na(row_i)]
-      col_i <- match(colnames(augment_la_mat)[-1],destination_las)
+      col_i <- destination_las %in% colnames(augment_la_mat)[-1] # match(colnames(augment_la_mat)[-1],destination_las)
       col_i <- col_i[!is.na(col_i)]
       #la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_la_mat_list[[i]][[j]][[k]][,-1])
       row_j <- match(origin_las,augment_la_mat[,1])
@@ -106,7 +106,7 @@ for(i in 1:5){
       col_j <- match(destination_las,colnames(augment_la_mat))
       col_j <- col_j[!is.na(col_j)]
       la_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(augment_la_mat[row_j,col_j])
-      #diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]][1:min_dim,1:min_dim] ) - diag(la_mat_list[[i]][[j]][[k]]))
+      diag(la_mat_list[[i]][[j]][[k]]) <- 1 - (rowSums(la_mat_list[[i]][[j]][[k]][1:min_dim,1:min_dim] ) - diag(la_mat_list[[i]][[j]][[k]]))
     }
   }
 }
@@ -401,7 +401,7 @@ for(scenario in scenarios){
           temp_distance_for_inh[[j]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==colnm,with=F][[colnm]]
           reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==roadnames[j],with=F][[roadnames[j]]]
         }
-        temp_distance_for_inh[[i]] <- c()
+        #temp_distance_for_inh[[i]] <- c()
         keep_rows <- rowSums(reorganise[[i]][,3:8])>0
         reorganise[[i]] <- reorganise[[i]][keep_rows,]
         colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
