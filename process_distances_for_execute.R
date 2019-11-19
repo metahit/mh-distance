@@ -401,12 +401,12 @@ for(scenario in scenarios){
           temp_distance_for_inh[[j]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==colnm,with=F][[colnm]]
           reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==roadnames[j],with=F][[roadnames[j]]]
         }
-        temp_distance_for_inh[[i]] <- c()
         keep_rows <- rowSums(reorganise[[i]][,3:8])>0
         reorganise[[i]] <- reorganise[[i]][keep_rows,]
         colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
         reorganise[[i]]$la <- home_las[one_city_las[i]]
       }
+      temp_distance_for_inh <- NULL
       distance_for_inh[[city]] <- rbindlist(reorganise)
     }
   }
