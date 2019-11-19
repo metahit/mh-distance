@@ -384,16 +384,24 @@ for(scenario in scenarios){
         print(i)
         temp_distance_for_inh[[i]] <- distance_sums_temp[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=home_las[one_city_las]]
       }
+      distance_sums_temp <- distance_sums <- NULL
       # get road la names
-      la_road <- sapply(home_las[one_city_las],function(x)paste0(x,roadnames))
+      #la_road <- sapply(home_las[one_city_las],function(x)paste0(x,roadnames))
       # sum over dist cats
-      temp_distance_for_inh <- distance_sums[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=la_road]
+      #temp_distance_for_inh <- distance_sums[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=la_road]
       # reorganise into long form
       reorganise <- list()
-      colnms <- colnames(temp_distance_for_inh)
+      colnms <- home_las[one_city_las]
       for(i in 1:length(one_city_las)) {
-        rdnms <- sapply(colnms,function(x)gsub(home_las[one_city_las[i]],'',x))
-        reorganise[[i]] <- temp_distance_for_inh[,rdnms%in%c(roadnames,'census_id','mode_name'),with=F]
+        colnm <- colnms[i]
+        temp_distance_for_inh[[i]][[roadnames[1]]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[1]])==colnm,with=F][[colnm]]
+        #rdnms <- home_las[one_city_las[i]] # sapply(colnms,function(x)gsub(home_las[one_city_las[i]],'',x))
+        reorganise[[i]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[i]])%in%c(roadnames[1],'census_id','mode_name'),with=F]
+        for(j in 2:length(roadnames)){
+          temp_distance_for_inh[[i]][[roadnames[j]]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[i]])==colnm,with=F][[colnm]]
+          reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[i]])%in%c(roadnames[j],'census_id','mode_name'),with=F]
+        }
+        temp_distance_for_inh[[i]] <- c()
         keep_rows <- rowSums(reorganise[[i]][,3:8])>0
         reorganise[[i]] <- reorganise[[i]][keep_rows,]
         colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
