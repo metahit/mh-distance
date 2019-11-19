@@ -394,12 +394,12 @@ for(scenario in scenarios){
       colnms <- home_las[one_city_las]
       for(i in 1:length(one_city_las)) {
         colnm <- colnms[i]
-        temp_distance_for_inh[[i]][[roadnames[1]]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[1]])==colnm,with=F][[colnm]]
+        temp_distance_for_inh[[1]][[roadnames[1]]] <- temp_distance_for_inh[[1]][,colnames(temp_distance_for_inh[[1]])==colnm,with=F][[colnm]]
         #rdnms <- home_las[one_city_las[i]] # sapply(colnms,function(x)gsub(home_las[one_city_las[i]],'',x))
-        reorganise[[i]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[i]])%in%c(roadnames[1],'census_id','mode_name'),with=F]
+        reorganise[[i]] <- temp_distance_for_inh[[1]][,colnames(temp_distance_for_inh[[1]])%in%c(roadnames[1],'census_id','mode_name'),with=F]
         for(j in 2:length(roadnames)){
-          temp_distance_for_inh[[i]][[roadnames[j]]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[i]])==colnm,with=F][[colnm]]
-          reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[i]][,colnames(temp_distance_for_inh[[i]])%in%c(roadnames[j],'census_id','mode_name'),with=F]
+          temp_distance_for_inh[[j]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==colnm,with=F][[colnm]]
+          reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==roadnames[j],with=F][[roadnames[j]]]
         }
         temp_distance_for_inh[[i]] <- c()
         keep_rows <- rowSums(reorganise[[i]][,3:8])>0
