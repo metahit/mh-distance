@@ -16,7 +16,7 @@
 #! How many cores do you need in total?
 ###SBATCH --ntasks=16
 #! How much wallclock time will be required? Use format DD-HH:MM:SS
-#SBATCH --time=3:00:00
+#SBATCH --time=10:00:00
 
 #! How much memory in MB you require. (This is only necessary if it is
 #! greater than 16GB per core)

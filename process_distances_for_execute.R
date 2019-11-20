@@ -413,18 +413,19 @@ for(scenario in scenarios){
   }
   
   
-  all_distances[[scenario]] <- list(distance_for_inh=distance_for_inh,
+  all_distances <- list(distance_for_inh=distance_for_inh,
                                     distance_for_pa=distance_for_pa,
                                     distance_for_cas=distance_for_cas,
                                     distance_for_strike=distance_for_strike,
                                     distance_for_emission=distance_for_emission,
                                     distance_for_noise=distance_for_noise)
+
+
+  saveRDS(all_distances$distance_for_inh$london,paste0('outputs/',scenario,'london_inh_distances.Rds'))
+  all_distances$distance_for_inh$london <- NULL
+  saveRDS(all_distances,paste0('outputs/',scenario,'all_distances.Rds'))
+  all_distances <- c()
 }
-
-
-
-saveRDS(all_distances,'outputs/all_distances.Rds')
-
 ###################################################################################
 ## a look at the distances
 
