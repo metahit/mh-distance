@@ -411,20 +411,17 @@ for(scenario in scenarios){
       distance_for_inh[[city]] <- rbindlist(reorganise)
     }
   }
-  
-  
-  all_distances <- list(distance_for_inh=distance_for_inh,
-                                    distance_for_pa=distance_for_pa,
-                                    distance_for_cas=distance_for_cas,
-                                    distance_for_strike=distance_for_strike,
-                                    distance_for_emission=distance_for_emission,
-                                    distance_for_noise=distance_for_noise)
 
 
-  saveRDS(all_distances$distance_for_inh$london,paste0('outputs/',scenario,'london_inh_distances.Rds'))
-  all_distances$distance_for_inh$london <- NULL
-  saveRDS(all_distances,paste0('outputs/',scenario,'all_distances.Rds'))
-  all_distances <- c()
+  saveRDS(distance_for_inh$london,paste0('../mh-execute/inputs/distances/',scenario,'london_inh_distances.Rds'))
+  distance_for_inh$london <- NULL
+  saveRDS(distance_for_inh,paste0('../mh-execute/inputs/distances/',scenario,'inh_distances.Rds'))
+  distance_for_inh <- c()
+  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
+  distance_for_pa <- c()
+  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-execute/inputs/distances/',scenario,'injury_distances.Rds'))
+  saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distances.Rds'))
+
 }
 ###################################################################################
 ## a look at the distances

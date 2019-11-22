@@ -12,7 +12,7 @@
 ## All the options described there can be included in an #SBATCH command
 
 #! Name of the job: change this to anything you like
-#SBATCH -J hitch
+#SBATCH -J dist
 #! How many cores do you need in total?
 ###SBATCH --ntasks=16
 #! How much wallclock time will be required? Use format DD-HH:MM:SS
