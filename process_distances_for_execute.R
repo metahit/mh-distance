@@ -128,8 +128,8 @@ for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synt
 for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- 
   synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
                           function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                            (grepl('base',x)&grepl('wkkm',x))|
-                            (grepl('scen',x)&grepl('wkkm',x))
+                            ((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
+                            ((grepl('base',x)|grepl('scen',x))&grepl('wkkm',x))
   ),with=F]
 # rename
 la_names <- sapply(synth_pop_files,function(x)gsub('SPind_','',x))
@@ -148,6 +148,7 @@ for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- setD
 for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- 
   synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
                           function(x)x%in%c('census_id','urbanmatch','demogindex')|
+                            ((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
                             (grepl('base',x)&grepl('wkkm',x))
   ),with=F]
 # rename
@@ -332,10 +333,10 @@ for(scenario in scenarios){
   pa_modes <- c('cycle','walk')
   pa_pops <- list()
   for(i in 1:number_city_las) pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
-                                                                              walk_wkkm=walk_wkkm_d1,
-                                                                              cycle_wkkm=cycle_wkkm_d1+cycle_wkkm_d2+cycle_wkkm_d3,
+                                                                              walk_wkhr=walk_wkhr,
+                                                                              cycle_wkhr=cycle_wkhr,
                                                                               la=i)]
-  #cols <- sapply(pa_modes,function(x)paste0('base_',x,'_wkkm'))
+  #cols <- sapply(pa_modes,function(x)paste0('base_',x,'_wkhr'))
   distance_for_pa <- rbindlist(pa_pops)
   pa_pops <- NULL
     
