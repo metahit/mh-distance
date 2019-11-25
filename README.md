@@ -23,3 +23,11 @@ outputs/all_distances:		km per week
 `process_distances_for_execute.R` takes the synthetic population and the travel-mapping matrices to compute travel summaries used in mh-execute. Output = mh-execute/inputs/distances.
 
 `compare_SP_to_RTS_total.R` takes the synthetic population and the travel-mapping matrices to compute travel summaries for the whole of England to compare to five_road_data. Output = outputs/compare_rts_sp. 
+
+## Distances for execute
+
+The main output is the set of processed distances for the execution of Metahit. In summary, they are:
+
+| Label | Description | Dimensions | Units | City boundary |
+| --- | --- | --- | --- | --- |
+| emission | Contribution to AP emissions | Road, LA, mode | Distance | Travel within city |
