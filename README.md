@@ -30,10 +30,10 @@ The main output is the set of processed distances for the execution of Metahit. 
 
 | Label | Description | Dimensions | Units | City boundary | Modes | Who |
 | --- | --- | --- | --- | --- | --- | --- |
-| emission | Contribution to AP emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, *bus* | Drivers |
+| emission | Contribution to AP emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, bus | Drivers |
 | noise | Contribution to noise emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, *bus* | Drivers |
 | cas | Travel at risk of injury | Road, city, mode, demography | Distance | Travel within city | Car, motorcycle, bus, walk, cycle | Drivers and passengers |
-| strike | Travel posing risk of injury | Road, city, mode, demography | Distance | Travel within city | Car, motorcycle, *bus*, walk, cycle | Drivers |
+| strike | Travel posing risk of injury | Road, city, mode, demography | Distance | Travel within city | Car, motorcycle, walk, cycle | Drivers |
 | pa | Physical activity | Mode, id | Duration | Travel of city residents | Walk, cycle | Drivers |
 | inh | Travel exposed to AP | Road, LA, mode, id | *Duration* | Travel of city residents within city | Car, motorcycle, bus, walk, cycle, *tube, train* | Drivers and passengers |
 
