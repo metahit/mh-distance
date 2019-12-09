@@ -354,7 +354,7 @@ for(scenario in scenarios){
     if(length(one_city_las)>0){
       # expand by mode, dist_cat, home_la, participant_id
       distance_sums <- lapply(one_city_las,function(i){ # lapply(1:length(synth_pops_scen),function(i){
-        melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes)),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
+        melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes,'_wkkm')),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
         melt3 <- melt(melt2,id.vars=c('census_id','urbanmatch','distcat'),measure=patterns('^mode'),variable.name='mode_name',value.name='dist', variable.factor=F)
         melt3$la_index <- i
         melt3$mode <- 1
@@ -403,7 +403,7 @@ for(scenario in scenarios){
           reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==roadnames[j],with=F][[roadnames[j]]]
         }
         #temp_distance_for_inh[[i]] <- c()
-        keep_rows <- rowSums(reorganise[[i]][,3:8])>0
+        keep_rows <- rowSums(reorganise[[i]][,2+1:length(roadnames),with=F])>0
         reorganise[[i]] <- reorganise[[i]][keep_rows,]
         colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
         reorganise[[i]]$la <- home_las[one_city_las[i]]
