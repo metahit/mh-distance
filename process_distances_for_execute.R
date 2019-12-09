@@ -431,7 +431,7 @@ all_distances <- readRDS('outputs/all_distances.Rds')
 
 
 str_dist <- all_distances$base_$distance_for_strike
-distance_sums <- sapply(colnames(str_dist)[3:8],
+distance_sums <- sapply(colnames(str_dist)[2+1:length(roadnames)],
        function(y) sapply(unique(str_dist$mode_name),
                          function(x) sapply(city_regions,function(z)
                            c(sum(subset(str_dist,mode_name==x&city_region==z)[[y]]))
@@ -481,7 +481,7 @@ rua[1]/rua[2]
 ura[1]/ura[2]
 
 distance_for_strike <- all_distances[[1]]$distance_for_strike
-distance_for_strike$total <- rowSums(distance_for_strike[,3:8])
+distance_for_strike$total <- rowSums(distance_for_strike[,2+1:length(roadnames)])
 distance_for_strike <- subset(distance_for_strike,total>0)
 distance_for_strike_car <- distance_for_strike[distance_for_strike$mode_name=='cardrive',]
 sum(distance_for_strike_car$motorway)/sum(distance_for_strike_car$total)
@@ -500,7 +500,7 @@ strike_summary[5,c(5,4,2)]*52/1000*6/c(15079141.1575,6539880.52283887,5734424.70
 
 
 distance_for_cas <- all_distances[[1]]$distance_for_inh
-distance_for_cas$total <- rowSums(distance_for_cas[,3:8])
+distance_for_cas$total <- rowSums(distance_for_cas[,2+1:length(roadnames)])
 distance_for_cas <- subset(distance_for_cas,total>0)
 distance_for_cas_car <- distance_for_cas[distance_for_cas$mode_name=='cardrive',]
 sum(distance_for_cas_car$motorway)/sum(distance_for_cas_car$total)
@@ -541,7 +541,7 @@ dev.off()
 
 #road_dist <- list()#readRDS('car_million_km_2010_to_2015.Rds')
 road_dist <- lapply(c('cycle','cardrive','mbikedrive'),
-                    function(x)sapply(colnames(str_dist)[3:8],
+                    function(x)sapply(colnames(str_dist)[2+1:length(roadnames)],
                         function(y)  sapply(city_regions,function(z)
                                              c(sum(subset(str_dist,mode_name==x&city_region==z)[[y]]))
                                            )
