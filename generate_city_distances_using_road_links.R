@@ -134,7 +134,6 @@ subset(raw_aadf,!count_point_id%in%road_df$count_point_id&road_letter%in%c('A','
 
 raw_aadf$bracket_m <- sapply(raw_aadf$RoadNumber,function(x)grepl('(M)',x))
 subset(raw_aadf,road_name!=RoadNumber&!bracket_m&road_letter%in%c('A','M'))[,c(1,2,9,10,12,13,36)]
-c('M6(T)')
 
 bristol <- subset(raw_aadf,road_letter%in%c('A')&local_authority_name%in%c("South Gloucestershire","Bristol, City of","Bath and North East Somerset","North Somerset")&year>2009&year<2016)
 sapply(aadf_names,function(x)
@@ -219,7 +218,7 @@ for(mode_number in c(rts_indices,c(1:length(mh_names))[-rts_indices])){
   #saveRDS(tab,paste0('outputs/',mh_name,'dist2010to2015.Rds'))
   tabs_list[[mh_name]] <- tab
 }
-write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'outputs/mode_road_city.csv')
+write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'../mh-execute/inputs/distances/mode_road_city.csv')
 
 
 
