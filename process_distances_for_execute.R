@@ -420,7 +420,7 @@ for(scenario in scenarios){
   distance_for_inh <- c()
   saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
   distance_for_pa <- c()
-  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-execute/inputs/distances/',scenario,'injury_distances.Rds'))
+  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/distances/',scenario,'injury_distances.Rds'))
   saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distances.Rds'))
 
 }
