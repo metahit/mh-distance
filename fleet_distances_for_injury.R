@@ -113,6 +113,6 @@ for(mode_number in c(rts_indices,c(1:length(mh_names))[-rts_indices])){
   #saveRDS(tab,paste0('outputs/',mh_name,'dist2010to2015.Rds'))
   tabs_list[[mh_name]] <- tab
 }
-write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'outputs/mode_road_city.csv')
-write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'../mh-injury/rds_storage/mode_road_city.csv')
+write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'outputs/mode_road_city_year.csv')
+write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'../mh-injury/rds_storage/mode_road_city_year.csv')
 
