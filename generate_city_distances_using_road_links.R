@@ -226,7 +226,7 @@ write.csv(tab_save,'outputs/mode_5road_city.csv')
 for(i in 3:ncol(tab_save)) tab_save[,i] <- as.numeric(as.character(tab_save[,i]))
 tab_save$other <- rowSums(tab_save[,4:ncol(tab_save)])
 tab_save <- tab_save[,c(1:3,ncol(tab_save))]
-write.csv(tab_save,'../mh-execute/inputs/distances/mode_road_city.csv')
+write.csv(tab_save,'../mh-execute/inputs/distances/mode_road_city.csv',row.names=F)
 
 
 ##########################################################
