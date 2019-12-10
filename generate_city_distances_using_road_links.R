@@ -218,8 +218,15 @@ for(mode_number in c(rts_indices,c(1:length(mh_names))[-rts_indices])){
   #saveRDS(tab,paste0('outputs/',mh_name,'dist2010to2015.Rds'))
   tabs_list[[mh_name]] <- tab
 }
-write.csv(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))),'outputs/mode_road_city.csv')
+tab_save <- data.frame(do.call(rbind,lapply(1:length(tabs_list),function(x)cbind(names(tabs_list)[x],tabs_list[[x]]))))
+tab_save <- cbind(city=rep(rownames(tab_save)[1:length(city_region_names)],length(tabs_list)),tab_save)
+rownames(tab_save) <- NULL
+write.csv(tab_save,'outputs/mode_5road_city.csv')
 
+for(i in 3:ncol(tab_save)) tab_save[,i] <- as.numeric(as.character(tab_save[,i]))
+tab_save$other <- rowSums(tab_save[,4:ncol(tab_save)])
+tab_save <- tab_save[,c(1:3,ncol(tab_save))]
+write.csv(tab_save,'../mh-execute/inputs/distances/mode_road_city.csv')
 
 
 ##########################################################
