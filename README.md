@@ -18,7 +18,9 @@ outputs/all_distances:		km per week
 
 ## Files
 
-`generate_city_distances_using_road_links.R` uses raw AADF (annual average daily flow) counts to estimate primary road distances and explores some methods for extrapolating to minor roads at the city-region level. Output = outputs/mode_road_city.csv.
+`generate_city_distances_using_road_links.R` uses raw AADF (annual average daily flow) counts to estimate primary road distances and explores some methods for extrapolating to minor roads at the city-region level. Output = outputs/mode_5road_city.csv. (Saved here for reference - not used at present in mh.)
+
+`fleet_distances_for_injury.R` uses raw AADF (annual average daily flow) counts to estimate motorway and other road distances for all years. Output = mh-injury/rds_storage/mode_road_city.csv.
 
 `generate_la_distances_for_travel_matrices.R` uses raw AADF counts to estimate primary road distances for LAs and concatenates the total LA distance for use in metahit/mh-route-commutes for the allocation of trips of the synthetic population to LAs and road types. Output = outputs/mode_road_city_las.csv.
 
