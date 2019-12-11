@@ -397,6 +397,9 @@ for(scenario in scenarios){
       for(m in 1:length(inh_modes)){
         mode_name <- inh_modes[m]
         for(i in one_city_las){
+          ##!! temp fix
+          if('cycle_wkhr_d1'%in%colnames(synth_pops_scen[[i]]))
+          colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='cycle_wkhr_d1'] <- 'cycle_wkhr'
           if(mode_name=='walk'){
             # just rename
             colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkhr'] <- 'walk_wkhr_d1'
