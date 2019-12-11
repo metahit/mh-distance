@@ -384,6 +384,8 @@ for(scenario in scenarios){
     inh_modes <- driven_modes
     cols <- unlist(lapply(1:length(inh_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(inh_modes[x],'_wkkm_d',y))))
     distance_for_inh <- list()
+    
+    time_modes <- list('cycle','walk',c('car','taxi'),'mbike','bus','van')
   }
   # go city by city
   city <- 'bristol'
@@ -391,6 +393,24 @@ for(scenario in scenarios){
     # should include only city las
     one_city_las <- which(names(synth_pops_scen)%in%city_regions_table$lad11cd[city_regions_table$cityregion==city])
     if(length(one_city_las)>0){
+      # mode by mode, use d1 to d4 to get total distance, then divide wkhr to wkhr_d1 to d4.
+      for(m in inh_modes){
+        mode_name <- inh_modes[m]
+        for(i in one_city_las){
+          if(mode_name=='walk'){
+            # just rename
+            colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkhr'] <- 'walk_wkhr_d1'
+          }else{
+            mode_cols <- sapply(cols,function(x)grepl(mode_name,x))
+            col_names <- cols[mode_cols]
+            total_distance <- rowSums(synth_pops_scen[[i]][,colnames(synth_pops_scen[[i]])%in%col_names,with=F])
+            nonzero <- total_distance>0
+            time_mode <- time_modes[[m]]
+            total_time <- rowSums(synth_pops_scen[[i]][,colnames(synth_pops_scen[[i]])%in%paste0(time_mode,'_wkhr'),with=F])[nonzero]
+            for(j in col_names) synth_pops_scen[[i]][[j]][nonzero] <- total_time  * synth_pops_scen[[i]][[j]][nonzero]/total_distance[nonzero]
+          }
+        }
+      }
       # expand by mode, dist_cat, home_la, participant_id
       distance_sums <- lapply(one_city_las,function(i){ 
         melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes,'_wkkm')),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
