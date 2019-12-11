@@ -414,7 +414,7 @@ for(scenario in scenarios){
       # expand by mode, dist_cat, home_la, participant_id
       distance_sums <- lapply(one_city_las,function(i){ 
         melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes,'_wkkm')),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
-        melt3 <- melt(melt2,id.vars=c('census_id','urbanmatch','distcat'),measure=patterns('^mode'),variable.name='mode_name',value.name='dist', variable.factor=F)
+        melt3 <- melt(melt2,id.vars=c('census_id','urbanmatch','distcat'),measure=patterns('^mode'),variable.name='mode_name',value.name='dur', variable.factor=F)
         melt3$la_index <- i
         melt3$mode <- 1
         for(j in inh_modes){
@@ -425,11 +425,11 @@ for(scenario in scenarios){
         melt3
       })
       distance_sums <- do.call(rbind,distance_sums)
-      distance_sums <- distance_sums[distance_sums$dist>0,]
-      distance_sums <- distance_sums[!is.na(distance_sums$dist),]
+      distance_sums <- distance_sums[distance_sums$dur>0,]
+      distance_sums <- distance_sums[!is.na(distance_sums$dur),]
       # map to home city las
       for(i in 1:length(one_city_las)) 
-        distance_sums[,home_las[one_city_las[i]]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dist','distcat','urbanmatch')]
+        distance_sums[,home_las[one_city_las[i]]:=.(dur*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dur','distcat','urbanmatch')]
       # map to roads within las
       temp_distance_for_inh <- list()
       for(i in 1:length(roadnames)){
@@ -439,7 +439,7 @@ for(scenario in scenarios){
           pos_indices <- distance_sums_temp[[la_col]]>0
           if(sum(pos_indices)>0)
             distance_sums_temp[[la_col]][pos_indices] <- 
-            distance_sums_temp[[la_col]][pos_indices]*distance_sums_temp[pos_indices,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
+            distance_sums_temp[[la_col]][pos_indices]*distance_sums_temp[pos_indices,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dur','distcat','urbanmatch','census_id','la_index')]$V1
         }
         temp_distance_for_inh[[i]] <- distance_sums_temp[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=home_las[one_city_las]]
         colnames(temp_distance_for_inh[[i]])[colnames(temp_distance_for_inh[[i]])%in%home_las[one_city_las]] <- paste0(home_las[one_city_las],'_',roadnames[i])
