@@ -12,20 +12,40 @@ la_city_indices <- sapply(city_las,function(x) which(city_regions==city_regions_
 ## get raw rc files
 matrix_path <- '../mh-execute/inputs/travel-matrices/'
 matrix_files <- list.files(matrix_path)
-rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc',x))]
+rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc[.]csv',x))]
 raw_rc_mat_list <- list()
 for(i in 1:5){ # 5 modes
   raw_rc_mat_list[[i]] <- list()
   for(j in 1:2){ # 2 urban/rural labels
     raw_rc_mat_list[[i]][[j]] <- list()
     # find out how many distance categories
-    distance_categories <- sum(sapply(matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))/2
+    distance_categories <- sum(sapply(rc_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
     for(k in 1:distance_categories){ # up to 4 distance categories
       d_bit <- paste0('d',k) #ifelse(distance_categories==1,'',paste0('d',k))
       filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matrc.csv')
       if(file.exists(filename)){
         mat_file <- read.csv(filename,stringsAsFactors = F)
         raw_rc_mat_list[[i]][[j]][[k]] <- mat_file
+      }
+    }
+  }
+}
+
+# duration road files
+dur_rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc_durn',x))]
+raw_dur_rc_mat_list <- list()
+for(i in 1:5){ # 5 modes
+  raw_dur_rc_mat_list[[i]] <- list()
+  for(j in 1:2){ # 2 urban/rural labels
+    raw_dur_rc_mat_list[[i]][[j]] <- list()
+    # find out how many distance categories
+    distance_categories <- sum(sapply(dur_rc_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
+    for(k in 1:distance_categories){ # up to 4 distance categories
+      d_bit <- paste0('d',k) #ifelse(distance_categories==1,'',paste0('d',k))
+      filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matrc_durn.csv')
+      if(file.exists(filename)){
+        mat_file <- read.csv(filename,stringsAsFactors = F)
+        raw_dur_rc_mat_list[[i]][[j]][[k]] <- mat_file
       }
     }
   }
@@ -39,7 +59,7 @@ for(i in 1:5){
   for(j in 1:2){
     raw_la_mat_list[[i]][[j]] <- list()
     # find out how many distance categories
-    distance_categories <- sum(sapply(matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))/2
+    distance_categories <- sum(sapply(la_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
     for(k in 1:distance_categories){
       d_bit <- paste0('d',k) #ifelse(distance_categories==1,'',paste0('d',k))
       filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matla.csv')
@@ -83,6 +103,24 @@ for(i in 1:5){
   }
 }
 
+## make dur_rc matrices
+dur_rc_mat_list <- list()
+for(i in 1:5){
+  dur_rc_mat_list[[i]] <- list()
+  for(j in 1:2){
+    dur_rc_mat_list[[i]][[j]] <- list()
+    for(k in 1:length(raw_dur_rc_mat_list[[i]][[j]])){
+      dur_rc_mat_list[[i]][[j]][[k]] <- matrix(0,ncol=length(roadnames),nrow=length(home_las))
+      row_j <- match(home_las,raw_dur_rc_mat_list[[i]][[j]][[k]][,1])
+      row_i <- home_las %in% raw_dur_rc_mat_list[[i]][[j]][[k]][,1] 
+      row_i <- row_i[!is.na(row_i)]
+      row_j <- row_j[!is.na(row_j)]
+      col_i <- roadnames %in% colnames(raw_dur_rc_mat_list[[i]][[j]][[k]])[-1] 
+      dur_rc_mat_list[[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_dur_rc_mat_list[[i]][[j]][[k]][row_j,-1])
+    }
+  }
+}
+
 ## make la matrices
 la_mat_list <- list()
 for(i in 1:5){
@@ -112,9 +150,10 @@ for(i in 1:5){
 }
 
 
-## duplicate car for motorbike
-#la_mat_list[[5]] <- la_mat_list[[3]]
-#rc_mat_list[[5]] <- rc_mat_list[[3]]
+## duplicate car (3) for van (6)
+la_mat_list[[6]] <- la_mat_list[[3]]
+rc_mat_list[[6]] <- rc_mat_list[[3]]
+dur_rc_mat_list[[6]] <- dur_rc_mat_list[[3]]
 
 ## get synthetic populations
 synth_pops <- list()
@@ -128,8 +167,8 @@ for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synt
 for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- 
   synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
                           function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                            ((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
-                            ((grepl('base',x)|grepl('scen',x))&grepl('wkkm',x))
+                            #((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
+                            (grepl('base',x)|grepl('scen',x))#&grepl('wkkm',x))
   ),with=F]
 # rename
 la_names <- sapply(synth_pop_files,function(x)gsub('SPind_','',x))
@@ -148,8 +187,8 @@ for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- setD
 for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- 
   synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
                           function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                            ((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
-                            (grepl('base',x)&grepl('wkkm',x))
+                            #((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
+                            grepl('base',x)#&grepl('wkkm',x))
   ),with=F]
 # rename
 la_names_supp <- sapply(synth_pop_supp_files,function(x)gsub('SPind_','',x))
@@ -347,13 +386,13 @@ for(scenario in scenarios){
   distance_for_inh <- list()
   }
   # go city by city
-  city <- 'london'
+  city <- 'bristol'
   for(city in city_regions){
     # should include only city las
     one_city_las <- which(names(synth_pops_scen)%in%city_regions_table$lad11cd[city_regions_table$cityregion==city])
     if(length(one_city_las)>0){
       # expand by mode, dist_cat, home_la, participant_id
-      distance_sums <- lapply(one_city_las,function(i){ # lapply(1:length(synth_pops_scen),function(i){
+      distance_sums <- lapply(one_city_las,function(i){ 
         melt2 <- melt(synth_pops_scen[[i]],id.vars=c('census_id','urbanmatch'),measure=patterns(paste0('^',inh_modes,'_wkkm')),variable.name='distcat',value.name=paste0('mode',inh_modes), variable.factor=F)
         melt3 <- melt(melt2,id.vars=c('census_id','urbanmatch','distcat'),measure=patterns('^mode'),variable.name='mode_name',value.name='dist', variable.factor=F)
         melt3$la_index <- i
@@ -371,45 +410,53 @@ for(scenario in scenarios){
       # map to home city las
       for(i in 1:length(one_city_las)) 
         distance_sums[,home_las[one_city_las[i]]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dist','distcat','urbanmatch')]
+      # map to roads within las
       temp_distance_for_inh <- list()
       for(i in 1:length(roadnames)){
         distance_sums_temp <- copy(distance_sums)
         for(j in 1:length(one_city_las)){
           la_col <- which(colnames(distance_sums_temp)==home_las[one_city_las[j]])
           pos_indices <- distance_sums_temp[[la_col]]>0
-          #distance_sums[[paste0(home_las[one_city_las[j]],roadnames[i])]] <- 0
           if(sum(pos_indices)>0)
             distance_sums_temp[[la_col]][pos_indices] <- 
             distance_sums_temp[[la_col]][pos_indices]*distance_sums_temp[pos_indices,rc_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][j,i],by=c('mode','dist','distcat','urbanmatch','census_id','la_index')]$V1
         }
-        print(i)
         temp_distance_for_inh[[i]] <- distance_sums_temp[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=home_las[one_city_las]]
+        colnames(temp_distance_for_inh[[i]])[colnames(temp_distance_for_inh[[i]])%in%home_las[one_city_las]] <- paste0(home_las[one_city_las],'_',roadnames[i])
       }
       distance_sums_temp <- distance_sums <- NULL
-      # get road la names
-      #la_road <- sapply(home_las[one_city_las],function(x)paste0(x,roadnames))
-      # sum over dist cats
-      #temp_distance_for_inh <- distance_sums[,lapply(.SD,sum),by=c('mode_name','census_id'),.SDcols=la_road]
-      # reorganise into long form
+      
+      # reorganise to have census ids as rows and all combinations of modes, roads and las as columns.
       reorganise <- list()
-      colnms <- home_las[one_city_las]
-      for(i in 1:length(one_city_las)) {
-        colnm <- colnms[i]
-        temp_distance_for_inh[[1]][[roadnames[1]]] <- temp_distance_for_inh[[1]][,colnames(temp_distance_for_inh[[1]])==colnm,with=F][[colnm]]
-        #rdnms <- home_las[one_city_las[i]] # sapply(colnms,function(x)gsub(home_las[one_city_las[i]],'',x))
-        reorganise[[i]] <- temp_distance_for_inh[[1]][,colnames(temp_distance_for_inh[[1]])%in%c(roadnames[1],'census_id','mode_name'),with=F]
-        for(j in 2:length(roadnames)){
-          temp_distance_for_inh[[j]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==colnm,with=F][[colnm]]
-          reorganise[[i]][[roadnames[j]]] <- temp_distance_for_inh[[j]][,colnames(temp_distance_for_inh[[j]])==roadnames[j],with=F][[roadnames[j]]]
+      concat <- list()
+      for(i in 1:length(roadnames)){
+        reorganise[[i]] <- list()
+        colnms <- paste0(home_las[one_city_las],'_',roadnames[i])
+        # split by mode
+        for(j in 1:length(inh_modes)){
+          reorganise[[i]][[j]] <- temp_distance_for_inh[[i]][mode_name==inh_modes[j],colnames(temp_distance_for_inh[[i]])!='mode_name',with=F]
+          colnames(reorganise[[i]][[j]])[colnames(reorganise[[i]][[j]])%in%colnms] <- paste0(colnms,'_',inh_modes[j])
         }
-        #temp_distance_for_inh[[i]] <- c()
-        keep_rows <- rowSums(reorganise[[i]][,2+1:length(roadnames),with=F])>0
-        reorganise[[i]] <- reorganise[[i]][keep_rows,]
-        colnames(reorganise[[i]]) <- c('mode_name','census_id',roadnames)
-        reorganise[[i]]$la <- home_las[one_city_las[i]]
+        # concatenate modes
+        concat[[i]] <- copy(reorganise[[i]][[1]])
+        for(j in 2:length(inh_modes)) {
+          newcolnns <- paste0(colnms,'_',inh_modes[j])
+          concat[[i]] <- merge(concat[[i]], reorganise[[i]][[j]],on='census_id', all=TRUE,nomatch=0)
+        }
+        reorganise[[i]] <- c()
       }
       temp_distance_for_inh <- NULL
-      distance_for_inh[[city]] <- rbindlist(reorganise)
+      # concatenate roads
+      to_save <- copy(concat[[1]])
+      for(i in 2:length(roadnames)) {
+        newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
+        to_save[concat[[i]],on='census_id',paste0(newcolnns):=get(paste0('i.',newcolnns))]
+      }
+      # clear memory, remove nas, and save
+      concat <- NULL
+      for(i in 2:ncol(to_save)) set(to_save,which(is.na(to_save[[i]])),i,0)
+      distance_for_inh[[city]] <- to_save
+      to_save <- NULL
     }
   }
 
