@@ -19,17 +19,17 @@
   search_terms <- c('rc[.]csv','rc_durn','la')
   file_extensions <- c('_matrc.csv','_matrc_durn.csv','_matla.csv')
   
-  matrix_list <- list()
+  raw_matrix_list <- list()
   for(rmn in 1:length(raw_matrix_names)){
-    matrix_list[[raw_matrix_names[rmn]]] <- list()
+    raw_matrix_list[[raw_matrix_names[rmn]]] <- list()
     search_term <- search_terms[rmn]
     file_extension <- file_extensions[rmn]
     
     sub_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl(search_term,x))]
     for(i in 1:5){ # 5 modes
-      matrix_list[[raw_matrix_names[rmn]]][[i]] <- list()
+      raw_matrix_list[[raw_matrix_names[rmn]]][[i]] <- list()
       for(j in 1:2){ # 2 urban/rural labels
-        matrix_list[[raw_matrix_names[rmn]]][[i]][[j]] <- list()
+        raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]] <- list()
         # find out how many distance categories
         distance_categories <- sum(sapply(sub_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
         for(k in 1:distance_categories){ # up to 4 distance categories
@@ -37,70 +37,13 @@
           filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,file_extension)
           if(file.exists(filename)){
             mat_file <- read.csv(filename,stringsAsFactors = F)
-            matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]] <- mat_file
+            raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]] <- mat_file
           }
         }
       }
     }
   }
-  for(rmn in 1:length(matrix_list)) assign(names(matrix_list)[rmn],matrix_list[[rmn]])
-  
-  rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc[.]csv',x))]
-  raw_rc_mat_list <- list()
-  for(i in 1:5){ # 5 modes
-    raw_rc_mat_list[[i]] <- list()
-    for(j in 1:2){ # 2 urban/rural labels
-      raw_rc_mat_list[[i]][[j]] <- list()
-      # find out how many distance categories
-      distance_categories <- sum(sapply(rc_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
-      for(k in 1:distance_categories){ # up to 4 distance categories
-        d_bit <- paste0('d',k) 
-        filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matrc.csv')
-        if(file.exists(filename)){
-          mat_file <- read.csv(filename,stringsAsFactors = F)
-          raw_rc_mat_list[[i]][[j]][[k]] <- mat_file
-        }
-      }
-    }
-  }
-  
-  dur_rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc_durn',x))]
-  raw_dur_rc_mat_list <- list()
-  for(i in 1:5){ # 5 modes
-    raw_dur_rc_mat_list[[i]] <- list()
-    for(j in 1:2){ # 2 urban/rural labels
-      raw_dur_rc_mat_list[[i]][[j]] <- list()
-      # find out how many distance categories
-      distance_categories <- sum(sapply(dur_rc_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
-      for(k in 1:distance_categories){ # up to 4 distance categories
-        d_bit <- paste0('d',k) 
-        filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matrc_durn.csv')
-        if(file.exists(filename)){
-          mat_file <- read.csv(filename,stringsAsFactors = F)
-          raw_dur_rc_mat_list[[i]][[j]][[k]] <- mat_file
-        }
-      }
-    }
-  }
-  
-  la_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('la',x))]
-  raw_la_mat_list <- list()
-  for(i in 1:5){
-    raw_la_mat_list[[i]] <- list()
-    for(j in 1:2){
-      raw_la_mat_list[[i]][[j]] <- list()
-      # find out how many distance categories
-      distance_categories <- sum(sapply(la_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
-      for(k in 1:distance_categories){
-        d_bit <- paste0('d',k) 
-        filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matla.csv')
-        if(file.exists(filename)){
-          mat_file <- read.csv(filename,stringsAsFactors = F)
-          raw_la_mat_list[[i]][[j]][[k]] <- mat_file
-        }
-      }
-    }
-  }
+  for(rmn in 1:length(raw_matrix_list)) assign(names(raw_matrix_list)[rmn],raw_matrix_list[[rmn]])
   
   ## make matrices uniform
   # define home las
@@ -115,6 +58,28 @@
   las <- unique(c(rc_las,dest_las))
   destination_las <- c(home_las, 'none')
   origin_las <- las
+  
+  matrix_names <- c('rc_mat_list','dur_rc_mat_list')
+  matrix_list <- list()
+  for(rmn in 1:length(matrix_names)){
+    matrix_list[[matrix_names[rmn]]] <- list()
+    for(i in 1:5){
+      matrix_list[[matrix_names[rmn]]][[i]] <- list()
+      for(j in 1:2){
+        matrix_list[[matrix_names[rmn]]][[i]][[j]] <- list()
+        for(k in 1:length(raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]])){
+          matrix_list[[matrix_names[rmn]]][[i]][[j]][[k]] <- matrix(0,ncol=length(roadnames),nrow=length(home_las))
+          row_j <- match(home_las,raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]][,1])
+          row_i <- home_las %in% raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]][,1] 
+          row_i <- row_i[!is.na(row_i)]
+          row_j <- row_j[!is.na(row_j)]
+          col_i <- roadnames %in% colnames(raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]])[-1]
+          matrix_list[[matrix_names[rmn]]][[i]][[j]][[k]][row_i,col_i] <- as.matrix(raw_matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]][row_j,-1])
+        }
+      }
+    }
+  }
+  for(rmn in 1:length(matrix_list)) assign(names(matrix_list)[rmn],matrix_list[[rmn]])
   
   ## make rc matrices
   rc_mat_list <- list()
@@ -237,7 +202,7 @@
   scenarios <- c('base_','scen_')
   scenario <- 'base_'
   dist_cats_per_mode <- sapply(rc_mat_list,function(x)sapply(x,length))[1,]
-  raw_la_mat_list <- raw_rc_mat_list <- raw_dur_rc_mat_list <- NULL
+  raw_la_mat_list <- raw_rc_mat_list <- raw_dur_rc_mat_list <- matrix_list <- raw_matrix_list <- NULL
 }
 for(scenario in scenarios){
   {
@@ -400,12 +365,12 @@ for(scenario in scenarios){
     
     
     # physical activity : duration per person per mode, including only city las
-    pa_modes <- c('cycle','walk')
-    pa_pops <- list()
-    for(i in 1:number_city_las) pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
-                                                                        walk_wkhr=walk_wkhr,
-                                                                        cycle_wkhr=cycle_wkhr,
-                                                                        la=i)]
+    #pa_modes <- c('cycle','walk')
+    #pa_pops <- list()
+    #for(i in 1:number_city_las) pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
+    #                                                                    walk_wkhr=walk_wkhr,
+    #                                                                    cycle_wkhr=cycle_wkhr,
+    #                                                                    la=i)]
     #cols <- sapply(pa_modes,function(x)paste0('base_',x,'_wkhr'))
     distance_for_pa <- rbindlist(pa_pops)
     pa_pops <- NULL
@@ -433,7 +398,7 @@ for(scenario in scenarios){
           colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='cycle_wkhr_d1'] <- 'cycle_wkhr'
           if(mode_name=='walk'){
             # just rename
-            colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkhr'] <- 'walk_wkhr_d1'
+            colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkhr'] <- 'walk_wkkm_d1'
           }else{
             mode_cols <- sapply(cols,function(x)grepl(mode_name,x))
             col_names <- cols[mode_cols]
@@ -504,7 +469,7 @@ for(scenario in scenarios){
       to_save <- copy(concat[[1]])
       for(i in 2:length(roadnames)) {
         newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
-        to_save[concat[[i]],on='census_id',paste0(newcolnns):=get(paste0('i.',newcolnns))]
+        to_save <- merge(to_save,concat[[i]],on='census_id',all=T)
       }
       # clear memory, remove nas, and save
       concat <- NULL
@@ -519,8 +484,8 @@ for(scenario in scenarios){
   distance_for_inh$london <- NULL
   saveRDS(distance_for_inh,paste0('../mh-execute/inputs/distances/',scenario,'inh_distances.Rds'))
   distance_for_inh <- c()
-  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
-  distance_for_pa <- c()
+  #saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
+  #distance_for_pa <- c()
   saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/distances/',scenario,'injury_distances.Rds'))
   saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distances.Rds'))
   
