@@ -394,7 +394,7 @@ for(scenario in scenarios){
     one_city_las <- which(names(synth_pops_scen)%in%city_regions_table$lad11cd[city_regions_table$cityregion==city])
     if(length(one_city_las)>0){
       # mode by mode, use d1 to d4 to get total distance, then divide wkhr to wkhr_d1 to d4.
-      for(m in inh_modes){
+      for(m in 1:length(inh_modes)){
         mode_name <- inh_modes[m]
         for(i in one_city_las){
           if(mode_name=='walk'){
