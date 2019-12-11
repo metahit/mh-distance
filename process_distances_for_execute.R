@@ -205,8 +205,8 @@
   all_distances <- list()
   scenarios <- c('base_','scen_')
   scenario <- 'base_'
-  dist_cats_per_mode <- sapply(raw_rc_mat_list,function(x)sapply(x,length))[1,]
-  raw_la_mat_list <- raw_rc_mat_list <- NULL
+  dist_cats_per_mode <- sapply(rc_mat_list,function(x)sapply(x,length))[1,]
+  raw_la_mat_list <- raw_rc_mat_list <- raw_dur_rc_mat_list <- NULL
 }
 for(scenario in scenarios){
   {
