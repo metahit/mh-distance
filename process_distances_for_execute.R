@@ -372,8 +372,8 @@ for(scenario in scenarios){
     #                                                                    cycle_wkhr=cycle_wkhr,
     #                                                                    la=i)]
     #cols <- sapply(pa_modes,function(x)paste0('base_',x,'_wkhr'))
-    distance_for_pa <- rbindlist(pa_pops)
-    pa_pops <- NULL
+    #distance_for_pa <- rbindlist(pa_pops)
+    #pa_pops <- NULL
     
     
     # pollution inhalation : duration per person per mode per road type per LA (we've already added passenger to driver)
