@@ -9,9 +9,42 @@
   city_las <- city_regions_table$lad11cd[city_regions_table$cityregion%in%city_regions]
   la_city_indices <- sapply(city_las,function(x) which(city_regions==city_regions_table$cityregion[city_regions_table$lad11cd==x]))
   
-  ## get raw rc files
+  ## get raw files
   matrix_path <- '../mh-execute/inputs/travel-matrices/'
   matrix_files <- list.files(matrix_path)
+  # rc=road coverage files
+  # durn=duration road files
+  # la= la files
+  raw_matrix_names <- c('raw_rc_mat_list','raw_dur_rc_mat_list','raw_la_mat_list')
+  search_terms <- c('rc[.]csv','rc_durn','la')
+  file_extensions <- c('_matrc.csv','_matrc_durn.csv','_matla.csv')
+  
+  matrix_list <- list()
+  for(rmn in 1:length(raw_matrix_names)){
+    matrix_list[[raw_matrix_names[rmn]]] <- list()
+    search_term <- search_terms[rmn]
+    file_extension <- file_extensions[rmn]
+    
+    sub_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl(search_term,x))]
+    for(i in 1:5){ # 5 modes
+      matrix_list[[raw_matrix_names[rmn]]][[i]] <- list()
+      for(j in 1:2){ # 2 urban/rural labels
+        matrix_list[[raw_matrix_names[rmn]]][[i]][[j]] <- list()
+        # find out how many distance categories
+        distance_categories <- sum(sapply(sub_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
+        for(k in 1:distance_categories){ # up to 4 distance categories
+          d_bit <- paste0('d',k) 
+          filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,file_extension)
+          if(file.exists(filename)){
+            mat_file <- read.csv(filename,stringsAsFactors = F)
+            matrix_list[[raw_matrix_names[rmn]]][[i]][[j]][[k]] <- mat_file
+          }
+        }
+      }
+    }
+  }
+  for(rmn in 1:length(matrix_list)) assign(names(matrix_list)[rmn],matrix_list[[rmn]])
+  
   rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc[.]csv',x))]
   raw_rc_mat_list <- list()
   for(i in 1:5){ # 5 modes
@@ -21,7 +54,7 @@
       # find out how many distance categories
       distance_categories <- sum(sapply(rc_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
       for(k in 1:distance_categories){ # up to 4 distance categories
-        d_bit <- paste0('d',k) #ifelse(distance_categories==1,'',paste0('d',k))
+        d_bit <- paste0('d',k) 
         filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matrc.csv')
         if(file.exists(filename)){
           mat_file <- read.csv(filename,stringsAsFactors = F)
@@ -31,7 +64,6 @@
     }
   }
   
-  # duration road files
   dur_rc_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('rc_durn',x))]
   raw_dur_rc_mat_list <- list()
   for(i in 1:5){ # 5 modes
@@ -41,7 +73,7 @@
       # find out how many distance categories
       distance_categories <- sum(sapply(dur_rc_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
       for(k in 1:distance_categories){ # up to 4 distance categories
-        d_bit <- paste0('d',k) #ifelse(distance_categories==1,'',paste0('d',k))
+        d_bit <- paste0('d',k) 
         filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matrc_durn.csv')
         if(file.exists(filename)){
           mat_file <- read.csv(filename,stringsAsFactors = F)
@@ -51,7 +83,6 @@
     }
   }
   
-  ## get raw la files
   la_matrix_files <- matrix_files[sapply(matrix_files,function(x)grepl('la',x))]
   raw_la_mat_list <- list()
   for(i in 1:5){
@@ -61,7 +92,7 @@
       # find out how many distance categories
       distance_categories <- sum(sapply(la_matrix_files,function(x)grepl(paste0('mode',i,'_u',j-1),x)))
       for(k in 1:distance_categories){
-        d_bit <- paste0('d',k) #ifelse(distance_categories==1,'',paste0('d',k))
+        d_bit <- paste0('d',k) 
         filename <- paste0(matrix_path,'mode',i,'_u',j-1,d_bit,'_matla.csv')
         if(file.exists(filename)){
           mat_file <- read.csv(filename,stringsAsFactors = F)
