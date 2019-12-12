@@ -431,6 +431,16 @@ for(scenario in scenarios){
       distance_sums <- distance_sums[distance_sums$dur>0,]
       distance_sums <- distance_sums[!is.na(distance_sums$dur),]
       print(10)
+      
+      # get tube duration for later
+      if(city=='london') {
+        print(2)
+        tube_travel <- do.call(rbind, lapply(one_city_las,function(i) synth_pops_scen[[i]][tube_wkhr>0,colnames(synth_pops_scen[[i]])%in%c('census_id','tube_wkhr'),with=F]) )
+        print(3)
+      }
+      # clear memory
+      for(i in 1:length(one_city_las)) synth_pops_scen[[i]] <- c()
+      
       # map to home city las
       for(i in 1:length(one_city_las)) 
         distance_sums[,home_las[one_city_las[i]]:=.(dur*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dur','distcat','urbanmatch')]
@@ -488,8 +498,6 @@ for(scenario in scenarios){
       concat <- NULL
       ## add tube travel for london residents
       if(city=='london') {
-        print(2)
-        tube_travel <- do.call(rbind, lapply(one_city_las,function(i) synth_pops_scen[[i]][tube_wkhr>0,colnames(synth_pops_scen[[i]])%in%c('census_id','tube_wkhr'),with=F]) )
         print(3)
         ##!! this is a left join so someone who does no travel but tube will be lost
         to_save[tube_travel,on='census_id',metro:=i.tube_wkhr]
