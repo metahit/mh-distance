@@ -389,6 +389,7 @@ for(scenario in scenarios){
     # should include only city las
     one_city_las <- which(names(synth_pops_scen)%in%city_regions_table$lad11cd[city_regions_table$cityregion==city])
     if(length(one_city_las)>0){
+      print(city)
       # mode by mode, use d1 to d4 to get total distance, then divide wkhr to wkhr_d1 to d4.
       for(m in 1:length(inh_modes)){
         mode_name <- inh_modes[m]
@@ -429,9 +430,11 @@ for(scenario in scenarios){
       distance_sums <- do.call(rbind,distance_sums)
       distance_sums <- distance_sums[distance_sums$dur>0,]
       distance_sums <- distance_sums[!is.na(distance_sums$dur),]
+      print(10)
       # map to home city las
       for(i in 1:length(one_city_las)) 
         distance_sums[,home_las[one_city_las[i]]:=.(dur*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dur','distcat','urbanmatch')]
+      print(20)
       # map to roads within las
       temp_distance_for_inh <- list()
       for(i in 1:length(roadnames)){
@@ -447,6 +450,7 @@ for(scenario in scenarios){
         colnames(temp_distance_for_inh[[i]])[colnames(temp_distance_for_inh[[i]])%in%home_las[one_city_las]] <- paste0(home_las[one_city_las],'_',roadnames[i])
       }
       distance_sums_temp <- distance_sums <- NULL
+      print(30)
       
       # reorganise to have census ids as rows and all combinations of modes, roads and las as columns.
       reorganise <- list()
@@ -459,19 +463,24 @@ for(scenario in scenarios){
           reorganise[[i]][[j]] <- temp_distance_for_inh[[i]][mode_name==inh_modes[j],colnames(temp_distance_for_inh[[i]])!='mode_name',with=F]
           colnames(reorganise[[i]][[j]])[colnames(reorganise[[i]][[j]])%in%colnms] <- paste0(colnms,'_',inh_modes[j])
         }
-        # concatenate modes
-        concat[[i]] <- copy(reorganise[[i]][[1]])
-        for(j in 2:length(inh_modes)) {
-          newcolnns <- paste0(colnms,'_',inh_modes[j])
-          concat[[i]] <- merge(concat[[i]], reorganise[[i]][[j]],on='census_id', all=TRUE,nomatch=0)
+        # concatenate modes, omitting cycle/walk and motorway
+        modes_to_include <- 1:length(inh_modes)
+        if(roadnames[i]=='motorway') modes_to_include <- which(!inh_modes%in%c('cycle','walk'))
+        concat[[i]] <- copy(reorganise[[i]][[modes_to_include[1]]])
+        for(j in 2:length(modes_to_include)) {
+          newcolnns <- paste0(colnms,'_',inh_modes[modes_to_include[j]])
+          concat[[i]] <- merge(concat[[i]], reorganise[[i]][[modes_to_include[j]]],on='census_id', all=TRUE,nomatch=0)
         }
         reorganise[[i]] <- c()
       }
       temp_distance_for_inh <- NULL
+      print(40)
       # concatenate roads
       to_save <- copy(concat[[1]])
       for(i in 2:length(roadnames)) {
+        print(50)
         newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
+        print(60)
         to_save <- merge(to_save,concat[[i]],on='census_id',all=T)
       }
       # clear memory, remove nas, and save
@@ -481,6 +490,7 @@ for(scenario in scenarios){
         print(2)
         tube_travel <- do.call(rbind, lapply(one_city_las,function(i) synth_pops_scen[[i]][tube_wkhr>0,colnames(synth_pops_scen[[i]])%in%c('census_id','tube_wkhr'),with=F]) )
         print(3)
+        ##!! this is a left join so someone who does no travel but tube will be lost
         to_save[tube_travel,on='census_id',metro:=i.tube_wkhr]
         print(4)
       }else{
