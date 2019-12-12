@@ -487,14 +487,16 @@ for(scenario in scenarios){
       print(40)
       print(sort(sapply(ls(),function(x)object.size(get(x))))/1e9)
       # concatenate roads
-      to_save <- copy(concat[[1]])
-      for(i in 2:length(roadnames)) {
-        concat[[i-1]] <- 0
-        print(50)
-        newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
-        print(60)
-        to_save <- merge(to_save,concat[[i]],on='census_id',all=T)
-      }
+      #to_save <- copy(concat[[1]])
+      to_save <- merge(concat[[1]],concat[[2]],on='census_id',all=T)
+      #for(i in 2:length(roadnames)) {
+      #  concat[[i-1]] <- 0
+      #  print(50)
+      #  newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
+      #  print(60)
+      #  print(tail(sort(sapply(ls(),function(x)object.size(get(x))))/1e9))
+      #  to_save <- merge(to_save,concat[[i]],on='census_id',all=T)
+      #}
       # clear memory, remove nas, and save
       concat <- NULL
       ## add tube travel for london residents
@@ -502,6 +504,7 @@ for(scenario in scenarios){
         print(3)
         ##!! this is a left join so someone who does no travel but tube will be lost
         to_save[tube_travel,on='census_id',metro:=i.tube_wkhr]
+        tube_travel <- NULL
         print(4)
       }else{
         to_save[,metro:=0]
