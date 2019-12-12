@@ -16,11 +16,11 @@
 #! How many cores do you need in total?
 ###SBATCH --ntasks=16
 #! How much wallclock time will be required? Use format DD-HH:MM:SS
-#SBATCH --time=10:00:00
+#SBATCH --time=3:00:00
 
 #! How much memory in MB you require. (This is only necessary if it is
 #! greater than 16GB per core)
-#SBATCH --mem=64GB
+#SBATCH --mem=96GB
 #! How big do you want your array of tasks, and how many to run at a time
 ###SBATCH --array=1-1
 
@@ -30,7 +30,7 @@
 #! How many whole nodes should be allocated? (You can ask for 
 #! more than one ONLY if the cluster is empty)
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=6
+###SBATCH --ntasks-per-node=6
 
 # --ntasks-per-node will be used in doParallel.R to specify the number of 
 # cores to use on the machine. Using 16 will allow us to use all cores
