@@ -34,11 +34,12 @@ The main output is the set of processed distances for the execution of Metahit. 
 
 | Label | Description | Dimensions | Units | City boundary | Modes | Who |
 | --- | --- | --- | --- | --- | --- | --- |
-| emission | Contribution to AP emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, *bus*, *van* | Drivers; all residents |
-| noise | Contribution to noise emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, *bus*, *van* | Drivers; all residents |
+| emission | Contribution to AP emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, *bus*, van | Drivers; all residents |
+| noise | Contribution to noise emissions | Road, LA, mode | Distance | Travel within city | Car, motorcycle, *bus*, van | Drivers; all residents |
 | cas | Travel at risk of injury | Road, city, mode, demography | Distance | Travel within city | Car, motorcycle, walk, cycle | Drivers and passengers; all residents |
 | strike | Travel posing risk of injury | Road, city, mode, demography | Distance | Travel within city | Car, motorcycle, walk, cycle | Drivers; all residents |
 | pa | Physical activity | Mode, id | Duration | Travel of city residents | Walk, cycle | Drivers; city residents |
-| inh | Travel exposed to AP | Road, LA, mode, id | *Duration* | Travel of city residents within city | Car, motorcycle, bus, walk, cycle, *tube, train*, *van* | Drivers and passengers; city residents |
+| inh | Travel exposed to AP | Road, LA, mode, id | Duration | Travel of city residents within city | Car, motorcycle, bus, walk, cycle, tube, van | Drivers and passengers; city residents |
 
 In *italics* are things not implemented, or not implemented properly.
+NB we don't calculate PA durations; instead, the values are extracted in mh-execute from inh.
