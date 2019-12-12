@@ -488,6 +488,7 @@ for(scenario in scenarios){
       print(sort(sapply(ls(),function(x)object.size(get(x))))/1e9)
       # concatenate roads
       to_save <- copy(concat[[1]])
+      concat[[1]] <- c()
       for(i in 2:length(roadnames)) {
         print(50)
         newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
