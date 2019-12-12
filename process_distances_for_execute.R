@@ -398,6 +398,9 @@ for(scenario in scenarios){
           colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='cycle_wkhr_d1'] <- 'cycle_wkhr'
           if(mode_name=='walk'){
             # just rename
+            if('walk_wkkm_d1'%in%colnames(synth_pops_scen[[i]])){
+              colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkkm_d1'] <- 'old'
+            }
             colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkhr'] <- 'walk_wkkm_d1'
           }else{
             mode_cols <- sapply(cols,function(x)grepl(mode_name,x))
