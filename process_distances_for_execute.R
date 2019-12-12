@@ -476,6 +476,12 @@ for(scenario in scenarios){
       }
       # clear memory, remove nas, and save
       concat <- NULL
+      to_save[,tube_wkhr:=0]
+      ## add tube travel for london residents
+      if(city=='london') {
+        tube_travel <- do.call(rbind, lapply(one_city_las,function(i) synth_pops_scen[[i]][tube_wkhr>0,colnames(synth_pops_scen[[i]])%in%c('census_id','tube_wkhr'),with=F]) )
+        to_save <- merge(to_save,tube_travel,on='census_id',all=T)
+      }
       for(i in 2:ncol(to_save)) set(to_save,which(is.na(to_save[[i]])),i,0)
       saveRDS(to_save,paste0('../mh-execute/inputs/distances/',scenario,city,'_inh_distances.Rds'))
       to_save <- c()
