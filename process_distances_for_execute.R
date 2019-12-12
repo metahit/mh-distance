@@ -477,16 +477,17 @@ for(scenario in scenarios){
       # clear memory, remove nas, and save
       concat <- NULL
       for(i in 2:ncol(to_save)) set(to_save,which(is.na(to_save[[i]])),i,0)
-      distance_for_inh[[city]] <- to_save
+      saveRDS(to_save,paste0('../mh-execute/inputs/distances/',scenario,city,'_inh_distances.Rds'))
+      to_save <- c()
+      #distance_for_inh[[city]] <- to_save
       to_save <- NULL
     }
   }
   
   
-  saveRDS(distance_for_inh$london,paste0('../mh-execute/inputs/distances/',scenario,'london_inh_distances.Rds'))
-  distance_for_inh$london <- NULL
-  saveRDS(distance_for_inh,paste0('../mh-execute/inputs/distances/',scenario,'inh_distances.Rds'))
-  distance_for_inh <- c()
+  #saveRDS(distance_for_inh$london,paste0('../mh-execute/inputs/distances/',scenario,'london_inh_distances.Rds'))
+  #distance_for_inh$london <- NULL
+  
   #saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
   #distance_for_pa <- c()
   saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/distances/',scenario,'injury_distances.Rds'))
