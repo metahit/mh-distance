@@ -475,6 +475,7 @@ for(scenario in scenarios){
       }
       temp_distance_for_inh <- NULL
       print(40)
+      print(sort(sapply(ls(),function(x)object.size(get(x))))/1e9)
       # concatenate roads
       to_save <- copy(concat[[1]])
       for(i in 2:length(roadnames)) {
