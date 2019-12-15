@@ -42,4 +42,3 @@ The main output is the set of processed distances for the execution of Metahit. 
 | inh | Travel exposed to AP | Road, LA, mode, id | Duration | Travel of city residents within city | Car, motorcycle, bus, walk, cycle, tube, van | Drivers and passengers; city residents |
 
 In *italics* are things not implemented, or not implemented properly.
-NB we don't calculate PA durations; instead, the values are extracted in mh-execute from inh.
