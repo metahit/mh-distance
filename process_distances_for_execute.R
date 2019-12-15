@@ -207,18 +207,20 @@
 for(scenario in scenarios){
   {
     # copy synthetic population
-    synth_pops_scen <- copy(synth_pops)
+    synth_pops_scen <- list()#copy(synth_pops)
     # keep only present scenario
     for(i in 1:number_city_las) synth_pops_scen[[i]] <- 
-        synth_pops_scen[[i]][,sapply(colnames(synth_pops_scen[[i]]),
+        copy(synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
                                      function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                                       grepl(scenario,x)),with=F]
+                                       grepl(scenario,x)),with=F])
     # rename scenario
     for(i in 1:number_city_las) colnames(synth_pops_scen[[i]]) <- sapply(colnames(synth_pops_scen[[i]]),function(x)gsub(scenario,'',x))
     # rename base for non-city la synthetic populations (they don't have scenarios)
+    for(i in (number_city_las+1):length(synth_pops)) synth_pops_scen[[i]] <- copy(synth_pops[[i]])
     for(i in (number_city_las+1):length(synth_pops_scen)) colnames(synth_pops_scen[[i]]) <- sapply(colnames(synth_pops_scen[[i]]),function(x)gsub('base_','',x))
     # remove scenario from core synthetic population
     for(i in 1:number_city_las) synth_pops[[i]] <- synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),function(x)!grepl(scenario,x)),with=F]
+    names(synth_pops_scen) <- names(synth_pops)
     
     # noise : total distance per mode per LA
     which_modes_noisy <- !driven_modes%in%c('cycle','walk')
@@ -363,17 +365,15 @@ for(scenario in scenarios){
     distance_for_cas <- rbindlist(reorganise)
     temp_dist <- NULL
     
-    
-    # physical activity : duration per person per mode, including only city las
-    #pa_modes <- c('cycle','walk')
-    #pa_pops <- list()
-    #for(i in 1:number_city_las) pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
-    #                                                                    walk_wkhr=walk_wkhr,
-    #                                                                    cycle_wkhr=cycle_wkhr,
-    #                                                                    la=i)]
-    #cols <- sapply(pa_modes,function(x)paste0('base_',x,'_wkhr'))
-    #distance_for_pa <- rbindlist(pa_pops)
-    #pa_pops <- NULL
+    # physical activity : duration per person per mode
+    pa_pops <- list()
+    cycle_cols <- sapply(colnames(synth_pops_scen[[1]]),function(x)grepl('cycle',x)&grepl('wkhr',x))
+    for(i in 1:number_city_las) 
+      pa_pops[[i]] <- synth_pops_scen[[i]][,.(census_id=census_id,
+                                              walking_dur_pa=walk_wkhr,
+                                              cycle_dur_pa=Reduce(`+`, .SD)), .SDcols=cycle_cols]
+    distance_for_pa <- rbindlist(pa_pops)
+    pa_pops <- NULL
     
     
     # pollution inhalation : duration per person per mode per road type per LA (we've already added passenger to driver)
@@ -506,11 +506,11 @@ for(scenario in scenarios){
       if(city=='london') {
         print(3)
         ##!! this is a left join so someone who does no travel but tube will be lost
-        to_save[tube_travel,on='census_id',metro:=i.tube_wkhr]
+        to_save[tube_travel,on='census_id',subway:=i.tube_wkhr]
         tube_travel <- NULL
         print(4)
       }else{
-        to_save[,metro:=0]
+        to_save[,subway:=0]
       }
       for(i in 2:ncol(to_save)) set(to_save,which(is.na(to_save[[i]])),i,0)
       print(5)
@@ -525,8 +525,8 @@ for(scenario in scenarios){
   #saveRDS(distance_for_inh$london,paste0('../mh-execute/inputs/distances/',scenario,'london_inh_distances.Rds'))
   #distance_for_inh$london <- NULL
   
-  #saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
-  #distance_for_pa <- c()
+  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
+  distance_for_pa <- c()
   saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/',scenario,'injury_distances.Rds'))
   saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distances.Rds'))
   
