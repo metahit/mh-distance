@@ -223,7 +223,7 @@ for(scenario in scenarios){
     names(synth_pops_scen) <- names(synth_pops)
     
     # noise : total distance per mode per LA
-    which_modes_noisy <- !driven_modes%in%c('cycle','walk')
+    which_modes_noisy <- !driven_modes%in%c('cycle','walk','bus')
     noisy_modes <- driven_modes[which_modes_noisy]
     dist_cats <- dist_cats_per_mode[which_modes_noisy]
     cols <- unlist(lapply(1:length(noisy_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(noisy_modes[x],'_wkkm_d',y))))
@@ -271,7 +271,7 @@ for(scenario in scenarios){
     # injury rate : total distance per mode per road type per LA per demographic group
     ## rename columns
     #for(i in 1:length(synth_pops_scen)) colnames(synth_pops_scen[[i]])[colnames(synth_pops_scen[[i]])=='walk_wkkm'] <- 'walk_wkkm_d1'
-    which_modes_strike <- 1:5
+    which_modes_strike <- which(modes%in%c('cardrive','walk','cycle','mbikedrive'))
     strike_modes <- driven_modes[which_modes_strike]
     dist_cats <- dist_cats_per_mode[which_modes_strike]
     cols <- unlist(lapply(1:length(strike_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(strike_modes[x],'_wkkm_d',y))))
