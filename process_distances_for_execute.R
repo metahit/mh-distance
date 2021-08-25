@@ -1,7 +1,7 @@
 {
   rm(list=ls())
   library(data.table)
-  setwd('~/overflow_dropbox/mh-distance/')
+  setwd("C:/Users/S M Labib/Desktop/METAHIT/mh-distance")
   
   city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',stringsAsFactors = F)
   city_regions <- unique(city_regions_table$cityregion)
@@ -153,7 +153,7 @@
   
   ## get synthetic populations
   synth_pops <- list()
-  synth_pop_path <- '../mh-execute/inputs/scenarios/'
+  synth_pop_path <- '../mh-execute/inputs/scenarios/s2/'#change the folder based on the scenario, have to convert into for loop
   synth_pop_files <- list.files(synth_pop_path)
   synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('SPind_E[[:digit:]]+.Rds',x))]
   #synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
@@ -173,17 +173,17 @@
   number_city_las <- length(synth_pops)
   
   ## add 'mini' to all cities, to all scenarios, for distance_for_cas, distance_for_strike, distance_for_emission, distance_for_noise
-  synth_pop_supp_path <- '../mh-execute/inputs/scenarios-mini/'
+  synth_pop_supp_path <- '../mh-execute/inputs/scenarios-mini/s2_v2/' #change folder name based on scenario
   synth_pop_supp_files <- list.files(synth_pop_supp_path)
   synth_pop_supp_files <- synth_pop_supp_files[sapply(synth_pop_supp_files,function(x)grepl('SPind_E[[:digit:]]+.Rds',x))]
-  #synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
+  synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
   # set to data table
   for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synth_pop_supp_path,synth_pop_supp_files[i-number_city_las])))
   # take subset of columns
   for(i in number_city_las+1:length(synth_pop_supp_files)) synth_pops[[i]] <- 
     synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
                             function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                              #((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
+                              ((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
                               (grepl('base',x)&grepl('wkkm',x))
     ),with=F]
   # rename
@@ -525,10 +525,10 @@ for(scenario in scenarios){
   #saveRDS(distance_for_inh$london,paste0('../mh-execute/inputs/distances/',scenario,'london_inh_distances.Rds'))
   #distance_for_inh$london <- NULL
   
-  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distances.Rds'))
+  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distancesS2.Rds'))
   distance_for_pa <- c()
-  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/',scenario,'injury_distances.Rds'))
-  saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distances.Rds'))
+  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/',scenario,'injury_distancesS2.Rds'))
+  saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distancesS2.Rds')) #change the file names
   
 }
 ###################################################################################
