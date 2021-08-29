@@ -1,8 +1,8 @@
-{
-  rm(list=ls())
-  library(data.table)
-  setwd("C:/Users/S M Labib/Desktop/METAHIT/mh-distance")
-  
+rm(list=ls())
+library(data.table)
+for (global_scen in c('cyc_scen', 'car_scen'))
+  {
+  # global_scen <- 'cyc_scen'
   city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',stringsAsFactors = F)
   city_regions <- unique(city_regions_table$cityregion)
   city_regions <- city_regions[city_regions!='']
@@ -153,7 +153,7 @@
   
   ## get synthetic populations
   synth_pops <- list()
-  synth_pop_path <- '../mh-execute/inputs/scenarios/s2/'#change the folder based on the scenario, have to convert into for loop
+  synth_pop_path <- paste0('../mh-execute/inputs/scenarios/', global_scen, '/')#change the folder based on the scenario, have to convert into for loop
   synth_pop_files <- list.files(synth_pop_path)
   synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('SPind_E[[:digit:]]+.Rds',x))]
   #synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
@@ -173,7 +173,7 @@
   number_city_las <- length(synth_pops)
   
   ## add 'mini' to all cities, to all scenarios, for distance_for_cas, distance_for_strike, distance_for_emission, distance_for_noise
-  synth_pop_supp_path <- '../mh-execute/inputs/scenarios-mini/s2_v2/' #change folder name based on scenario
+  synth_pop_supp_path <- paste0('../mh-execute/inputs/scenarios-mini/', global_scen, '/') #change folder name based on scenario
   synth_pop_supp_files <- list.files(synth_pop_supp_path)
   synth_pop_supp_files <- synth_pop_supp_files[sapply(synth_pop_supp_files,function(x)grepl('SPind_E[[:digit:]]+.Rds',x))]
   synth_pop_files <- synth_pop_files[sapply(synth_pop_files,function(x)grepl('subdivide',x))]
@@ -203,9 +203,11 @@
   scenario <- 'base_'
   dist_cats_per_mode <- sapply(rc_mat_list,function(x)sapply(x,length))[1,]
   raw_la_mat_list <- raw_rc_mat_list <- raw_dur_rc_mat_list <- matrix_list <- raw_matrix_list <- NULL
-}
-for(scenario in scenarios){
-  {
+
+  for(scenario in scenarios){
+    scenname <- ifelse(scenario != 'base_', paste0(global_scen, '_'), 'base_')
+    {
+    
     # copy synthetic population
     synth_pops_scen <- list()#copy(synth_pops)
     # keep only present scenario
@@ -490,16 +492,19 @@ for(scenario in scenarios){
       to_save <- copy(concat[[2]])
       concat[[2]] <- 0
       newcolnns <- colnames(concat[[1]])[colnames(concat[[1]])!='census_id']
-      to_save[concat[[1]],on='census_id',paste0(newcolnns):=get(paste0('i.',newcolnns))]
-      #to_save <- merge(concat[[1]],concat[[2]],on='census_id',all=T)
-      #for(i in 2:length(roadnames)) {
+      
+      # browser()
+      
+      to_save[concat[[1]],on='census_id',paste0(newcolnns):=(paste0('i.',newcolnns))]
+      # to_save <- merge(concat[[1]],concat[[2]],on='census_id',all=T)
+      # for(i in 2:length(roadnames)) {
       #  concat[[i-1]] <- 0
       #  print(50)
       #  newcolnns <- colnames(concat[[i]])[colnames(concat[[i]])!='census_id']
       #  print(60)
       #  print(tail(sort(sapply(ls(),function(x)object.size(get(x))))/1e9))
       #  to_save <- merge(to_save,concat[[i]],on='census_id',all=T)
-      #}
+      # }
       # clear memory, remove nas, and save
       concat <- NULL
       ## add tube travel for london residents
@@ -514,7 +519,8 @@ for(scenario in scenarios){
       }
       for(i in 2:ncol(to_save)) set(to_save,which(is.na(to_save[[i]])),i,0)
       print(5)
-      saveRDS(to_save,paste0('../mh-execute/inputs/distances/',scenario,city,'_inh_distances.Rds'))
+      # browser()
+      saveRDS(to_save,paste0('../mh-execute/inputs/distances/',scenname ,city,'_inh_distances.Rds'))
       to_save <- c()
       #distance_for_inh[[city]] <- to_save
       to_save <- NULL
@@ -524,11 +530,12 @@ for(scenario in scenarios){
   
   #saveRDS(distance_for_inh$london,paste0('../mh-execute/inputs/distances/',scenario,'london_inh_distances.Rds'))
   #distance_for_inh$london <- NULL
-  
-  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenario,'pa_distancesS2.Rds'))
+  saveRDS(distance_for_pa,paste0('../mh-execute/inputs/distances/',scenname , 'pa_distances.Rds'))
   distance_for_pa <- c()
-  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/',scenario,'injury_distancesS2.Rds'))
-  saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenario,'emissions_distancesS2.Rds')) #change the file names
+  saveRDS(list(distance_for_cas=distance_for_cas,distance_for_strike=distance_for_strike),paste0('../mh-injury/rds_storage/',scenname,'injury_distances.Rds'))
+  saveRDS(list(distance_for_emission=distance_for_emission,distance_for_noise=distance_for_noise),paste0('../mh-execute/inputs/distances/',scenname,'emissions_distances.Rds')) #change the file names
+  
+  }
   
 }
 ###################################################################################
@@ -677,4 +684,5 @@ cols <- rainbow(nrow(road_dist[[1]]))
         lines(c(0,20),c(0,20))
       }
     }
+}
 }
