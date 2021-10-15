@@ -1,7 +1,9 @@
 rm(list=ls())
 library(data.table)
-for (global_scen in c('cyc_scen', 'car_scen'))
-  {
+
+all_scens <- list.dirs(path = "../mh-execute/inputs/scenarios", full.names = FALSE, recursive = FALSE)
+
+for (global_scen in all_scens){
   # global_scen <- 'cyc_scen'
   city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',stringsAsFactors = F)
   city_regions <- unique(city_regions_table$cityregion)
@@ -684,5 +686,4 @@ cols <- rainbow(nrow(road_dist[[1]]))
         lines(c(0,20),c(0,20))
       }
     }
-}
 }
