@@ -162,12 +162,14 @@ for (global_scen in all_scens){
   # set to data table
   for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- setDT(readRDS(paste0(synth_pop_path,synth_pop_files[i])))
   # take subset of columns
-  for(i in 1:length(synth_pop_files)) synth_pops[[i]] <- 
-    synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
-                            function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                              #((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
-                              (grepl('base',x)|grepl('scen',x))#&grepl('wkkm',x))
-    ),with=F]
+  for(i in 1:length(synth_pop_files)) {
+    rm_colnames <- colnames(synth_pops[[i]])[!sapply(colnames(synth_pops[[i]]),
+                           function(x)x%in%c('census_id','urbanmatch','demogindex')|
+                             #((grepl('cycle',x)|grepl('walk',x))&grepl('wkhr',x))|
+                             (grepl('base',x)|grepl('scen',x))#&grepl('wkkm',x))
+    )]
+    synth_pops[[i]][,c(rm_colnames):=NULL] 
+  }
   # rename
   la_names <- sapply(synth_pop_files,function(x)gsub('SPind_','',x))
   la_names <- sapply(la_names,function(x)gsub('.Rds','',x))
@@ -213,10 +215,13 @@ for (global_scen in all_scens){
     # copy synthetic population
     synth_pops_scen <- list()#copy(synth_pops)
     # keep only present scenario
-    for(i in 1:number_city_las) synth_pops_scen[[i]] <- 
-        copy(synth_pops[[i]][,sapply(colnames(synth_pops[[i]]),
-                                     function(x)x%in%c('census_id','urbanmatch','demogindex')|
-                                       grepl(scenario,x)),with=F])
+    for(i in 1:number_city_las) {
+      rm_colnames <- colnames(synth_pops[[i]])[!sapply(colnames(synth_pops[[i]]),
+                                                       function(x)x%in%c('census_id','urbanmatch','demogindex')|
+                                                         grepl(scenario,x))]
+      synth_pops_scen[[i]] <- copy(synth_pops[[i]])
+      synth_pops_scen[[i]] <- synth_pops_scen[[i]][,c(rm_colnames):=NULL]
+    }
     # rename scenario
     for(i in 1:number_city_las) colnames(synth_pops_scen[[i]]) <- sapply(colnames(synth_pops_scen[[i]]),function(x)gsub(scenario,'',x))
     # rename base for non-city la synthetic populations (they don't have scenarios)
@@ -443,18 +448,18 @@ for (global_scen in all_scens){
         print(3)
       }
       # clear memory
-      for(i in 1:length(one_city_las)) synth_pops_scen[[i]] <- c()
+      for(i in one_city_las) synth_pops_scen[[i]] <- c()
       
       # map to home city las
-      for(i in 1:length(one_city_las)) 
-        distance_sums[,home_las[one_city_las[i]]:=.(dur*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,one_city_las[i]]),by=c('mode','dur','distcat','urbanmatch')]
+      for(i in one_city_las) 
+        distance_sums[,home_las[i]:=.(dur*la_mat_list[[mode]][[urbanmatch+1]][[as.numeric(distcat)]][la_index,i]),by=c('mode','dur','distcat','urbanmatch')]
       print(20)
       # map to roads within las
       temp_distance_for_inh <- list()
       for(i in 1:length(roadnames)){
         distance_sums_temp <- copy(distance_sums)
-        for(j in 1:length(one_city_las)){
-          la_col <- which(colnames(distance_sums_temp)==home_las[one_city_las[j]])
+        for(j in one_city_las){
+          la_col <- which(colnames(distance_sums_temp)==home_las[j])
           pos_indices <- distance_sums_temp[[la_col]]>0
           if(sum(pos_indices)>0)
             distance_sums_temp[[la_col]][pos_indices] <- 
