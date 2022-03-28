@@ -4,7 +4,7 @@ library(data.table)
 all_scens <- list.dirs(path = "../mh-execute/inputs/scenarios", full.names = FALSE, recursive = FALSE)
 
 for (global_scen in all_scens){
-  # global_scen <- 'cyc_scen'
+  # global_scen <- all_scens[2]
   city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',stringsAsFactors = F)
   city_regions <- unique(city_regions_table$cityregion)
   city_regions <- city_regions[city_regions!='']
@@ -209,7 +209,7 @@ for (global_scen in all_scens){
   for(scenario in scenarios){
     scenname <- ifelse(scenario != 'base_', paste0(global_scen, '_'), 'base_')
     {
-    
+      
     # copy synthetic population
     synth_pops_scen <- list()#copy(synth_pops)
     # keep only present scenario
@@ -227,7 +227,8 @@ for (global_scen in all_scens){
     names(synth_pops_scen) <- names(synth_pops)
     
     # noise : total distance per mode per LA
-    which_modes_noisy <- !driven_modes%in%c('cycle','walk','bus')
+    # AA: exclude bus from modes to be ignored
+    which_modes_noisy <- !driven_modes %in% c('cycle', 'walk')
     noisy_modes <- driven_modes[which_modes_noisy]
     dist_cats <- dist_cats_per_mode[which_modes_noisy]
     cols <- unlist(lapply(1:length(noisy_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(noisy_modes[x],'_wkkm_d',y))))
@@ -240,8 +241,9 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=urbanmatch,.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
+    
     # map to destination las
-    for(i in 1:length(destination_las)) distance_sums[,destination_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
+    for(i in 1:length(destination_las)) distance_sums[,destination_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]), by=c('mode','dist','distcat','urbanmatch')]
     # sum in destination las
     distance_for_noise <- distance_sums[,lapply(.SD,sum),by='mode_name',.SDcols=destination_las]
     
@@ -388,7 +390,7 @@ for (global_scen in all_scens){
     time_modes <- list('cycle','walk',c('car','taxi'),'mbike','bus','van')
   }
   # go city by city
-  city <- 'bristol'
+  # city <- 'bristol'
   for(city in city_regions){
     # should include only city las
     one_city_las <- which(names(synth_pops_scen)%in%city_regions_table$lad11cd[city_regions_table$cityregion==city])
