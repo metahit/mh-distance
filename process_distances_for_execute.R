@@ -242,6 +242,11 @@ for (global_scen in all_scens){
     ),by=urbanmatch,.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
     
+    # Assume bus occupancy to be 31 people - from ITHIM-Global (ithim-r)
+    # Account for bus distance by dividing it by 31, for passenger distance
+    # NOTE: get updated value for the UK
+    distance_sums[distance_sums$mode_name == "bus"]$dist <- distance_sums[distance_sums$mode_name == "bus"]$dist / 31
+    
     # map to destination las
     for(i in 1:length(destination_las)) distance_sums[,destination_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]), by=c('mode','dist','distcat','urbanmatch')]
     # sum in destination las
