@@ -4,7 +4,6 @@ library(data.table)
 all_scens <- list.dirs(path = "../mh-execute/inputs/scenarios", full.names = FALSE, recursive = FALSE)
 
 for (global_scen in all_scens){
-  # global_scen <- all_scens[2]
   city_regions_table <- read.csv('../mh-execute/inputs/mh_regions_lad_lookup.csv',stringsAsFactors = F)
   city_regions <- unique(city_regions_table$cityregion)
   city_regions <- city_regions[city_regions!='']
@@ -229,6 +228,7 @@ for (global_scen in all_scens){
     # noise : total distance per mode per LA
     # AA: exclude bus from modes to be ignored
     which_modes_noisy <- !driven_modes %in% c('cycle', 'walk')
+
     noisy_modes <- driven_modes[which_modes_noisy]
     dist_cats <- dist_cats_per_mode[which_modes_noisy]
     cols <- unlist(lapply(1:length(noisy_modes),function(x)sapply(1:dist_cats[x],function(y)  paste0(noisy_modes[x],'_wkkm_d',y))))
@@ -241,6 +241,7 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=urbanmatch,.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
+    distance_sums <- distance_sums[dist != 0] 
     
     # Assume bus occupancy to be 31 people - from ITHIM-Global (ithim-r)
     # Account for bus distance by dividing it by 31, for passenger distance
@@ -295,6 +296,8 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=c('urbanmatch','demogindex'),.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
+    distance_sums <- distance_sums[dist != 0] 
+    
     # map to home las
     for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
     # map to road types, sum over cities
@@ -347,6 +350,8 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=c('urbanmatch','demogindex'),.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
+    distance_sums <- distance_sums[dist != 0] 
+    
     # map to home las
     for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
     # map to road types, sum over cities
