@@ -241,7 +241,7 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=urbanmatch,.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
-    distance_sums <- distance_sums[dist != 0] 
+    distance_sums <- distance_sums[!is.na(dist) & dist > 0] 
     
     # Assume bus occupancy to be 31 people - from ITHIM-Global (ithim-r)
     # Account for bus distance by dividing it by 31, for passenger distance
@@ -296,7 +296,12 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=c('urbanmatch','demogindex'),.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
-    distance_sums <- distance_sums[dist != 0] 
+    distance_sums <- distance_sums[!is.na(dist) & dist > 0]
+    
+    # Assume bus occupancy to be 31 people - from ITHIM-Global (ithim-r)
+    # Account for bus distance by dividing it by 31, for passenger distance
+    # NOTE: get updated value for the UK
+    distance_sums[distance_sums$mode_name == "bus"]$dist <- distance_sums[distance_sums$mode_name == "bus"]$dist / 31
     
     # map to home las
     for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
@@ -350,7 +355,12 @@ for (global_scen in all_scens){
       mode_name=sapply(cols,function(x)strsplit(x,'_')[[1]][1])
     ),by=c('urbanmatch','demogindex'),.SDcols=cols])
     distance_sums <- rbindlist(distance_sums)
-    distance_sums <- distance_sums[dist != 0] 
+    distance_sums <- distance_sums[!is.na(dist) & dist > 0] 
+    
+    # Assume bus occupancy to be 31 people - from ITHIM-Global (ithim-r)
+    # Account for bus distance by dividing it by 31, for passenger distance
+    # NOTE: get updated value for the UK
+    distance_sums[distance_sums$mode_name == "bus"]$dist <- distance_sums[distance_sums$mode_name == "bus"]$dist / 31
     
     # map to home las
     for(i in 1:length(home_las)) distance_sums[,home_las[i]:=.(dist*la_mat_list[[mode]][[urbanmatch+1]][[distcat]][la_index,i]),by=c('mode','dist','distcat','urbanmatch')]
